@@ -7,6 +7,10 @@
 
 ---
 
+## Preconditions
+- Đã có tài liệu ở raw_data
+- Qrant đã được khởi động
+
 ## Main Flow *(mandatory)*
 
 1. Người vận hành chuẩn bị một hoặc nhiều file PDF y khoa về tiền tiểu đường.
