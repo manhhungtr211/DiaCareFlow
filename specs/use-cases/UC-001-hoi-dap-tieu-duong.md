@@ -6,27 +6,34 @@
 
 ---
 
-## User Scenarios & Testing *(mandatory)*
+## Main Flow *(mandatory)*
 
-### User Story 1 — Người dùng hỏi câu hỏi cơ bản về tiểu đường (Priority: P1)
+1. Người dùng mở hệ thống DiaCareFlow, gõ câu hỏi (ví dụ: "Tiền tiểu đường là gì?" hoặc "Chế độ ăn nào phù hợp cho người tiền tiểu đường?") 
+2. Hệ thống phân tích câu hỏi đầu vào thuộc loại an toàn qua lớp Guardrail.
+3. Hệ thống truy xuất top-k tài liệu y khoa liên quan nhất từ Qdrant.
+4. LLM tổng hợp thông tin từ tài liệu và trả về câu trả lời.
 
-Một người có nguy cơ tiền tiểu đường muốn tìm hiểu thông tin y khoa đáng tin cậy. Họ mở hệ thống DiaCareFlow, gõ câu hỏi bằng tiếng Việt (ví dụ: "Tiền tiểu đường là gì?" hoặc "Chế độ ăn nào phù hợp cho người tiền tiểu đường?") và nhận được câu trả lời rõ ràng, chính xác, trích dẫn từ tài liệu y khoa đã được nạp vào hệ thống.
+## Alternative Flows 
+- 2a. Nếu câu hỏi không an toàn, hệ thống sẽ từ chối trả lời câu hỏi và thông báo cho người dùng biết.
 
-**Independent Test**: Có thể test độc lập bằng cách gửi 1 câu hỏi qua Terminal/Script và kiểm tra kết quả trả về có chứa thông tin đúng từ tài liệu nguồn.
+## Acceptance Criteria 
 
-**Acceptance Scenarios**:
+1. **Given** tài liệu về tiền tiểu đường đã được nạp vào hệ thống (Qdrant)
+**When** người dùng hỏi "Tiền tiểu đường là gì?",
+**Then** hệ thống trả về câu trả lời chứa thông tin chính xác từ tài liệu nguồn, bao gồm định nghĩa và các dấu hiệu nhận biết.
 
-1. **Given** tài liệu về tiền tiểu đường đã được nạp vào hệ thống (Qdrant), **When** người dùng hỏi "Tiền tiểu đường là gì?", **Then** hệ thống trả về câu trả lời chứa thông tin chính xác từ tài liệu nguồn, bao gồm định nghĩa và các dấu hiệu nhận biết.
+2. **Given** tài liệu về chế độ ăn uống đã được nạp,
+**When** người dùng hỏi "Người tiền tiểu đường nên ăn gì?",
+**Then** hệ thống trả về lời khuyên dinh dưỡng dựa trên nội dung tài liệu y khoa, không tự sáng tạo thông tin ngoài tài liệu.
 
-2. **Given** tài liệu về chế độ ăn uống đã được nạp, **When** người dùng hỏi "Người tiền tiểu đường nên ăn gì?", **Then** hệ thống trả về lời khuyên dinh dưỡng dựa trên nội dung tài liệu y khoa, không tự sáng tạo thông tin ngoài tài liệu.
-
-3. **Given** tài liệu đã nạp, **When** người dùng hỏi một câu hỏi mà tài liệu **không** có thông tin (ví dụ: "Phẫu thuật dạ dày có chữa được tiểu đường không?"), **Then** hệ thống trả lời trung thực rằng không tìm thấy thông tin phù hợp trong tài liệu hiện có, thay vì bịa đặt câu trả lời.
+3. **Given** tài liệu đã nạp,
+**When** người dùng hỏi một câu hỏi mà tài liệu **không** có thông tin (ví dụ: "Phẫu thuật dạ dày có chữa được tiểu đường không?")
+**Then** hệ thống trả lời trung thực rằng không tìm thấy thông tin phù hợp trong tài liệu hiện có, thay vì bịa đặt câu trả lời.
 
 ### Edge Cases
 
 - Người dùng hỏi câu hỏi không liên quan đến tiểu đường (ví dụ: "Thời tiết hôm nay thế nào?") → Hệ thống nên trả lời rằng chỉ hỗ trợ câu hỏi về tiểu đường.
-- Người dùng hỏi bằng ngôn ngữ khác (tiếng Anh) → Hệ thống vẫn cố gắng trả lời dựa trên tài liệu tiếng Việt, hoặc thông báo chỉ hỗ trợ tiếng Việt.
-- Người dùng gửi câu hỏi rất dài (>500 từ) → Hệ thống vẫn xử lý được hoặc yêu cầu rút gọn.
+- Người dùng gửi câu hỏi rất dài (>500 từ) → Hệ thống yêu cầu rút gọn.
 - Người dùng gửi câu hỏi trống hoặc chỉ chứa ký tự đặc biệt → Hệ thống trả về thông báo lỗi thân thiện.
 - Tài liệu chưa được nạp (Qdrant trống) → Hệ thống thông báo chưa có dữ liệu thay vì trả lời rỗng.
 
@@ -43,7 +50,7 @@ Một người có nguy cơ tiền tiểu đường muốn tìm hiểu thông ti
 
 ### Key Entities
 
-- **Câu hỏi (Query)**: Văn bản đầu vào từ người dùng, bằng tiếng Anh, liên quan đến tiểu đường.
+- **Câu hỏi (Query)**: Văn bản đầu vào từ người dùng, bằng tiếng việt, liên quan đến tiểu đường.
 - **Ngữ cảnh (Context)**: Các đoạn tài liệu y khoa được truy xuất từ kho kiến thức (top-k chunks).
 - **Câu trả lời (Answer)**: Phản hồi văn bản được tạo dựa trên ngữ cảnh, trình bày cho người dùng cuối.
 - **Tài liệu nguồn (Source Document)**: Tài liệu PDF y khoa về tiền tiểu đường đã được nạp sẵn vào hệ thống.

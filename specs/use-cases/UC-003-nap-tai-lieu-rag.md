@@ -7,23 +7,33 @@
 
 ---
 
-## User Scenarios & Testing *(mandatory)*
+## Main Flow *(mandatory)*
 
-### User Story — Người vận hành nạp tài liệu PDF tiền tiểu đường vào hệ thống
+1. Người vận hành chuẩn bị một hoặc nhiều file PDF y khoa về tiền tiểu đường.
+2. Người vận hành chạy script nạp tài liệu vào hệ thống RAG.
+3. Script tự động đọc nội dung text từ file PDF.
+4. Hệ thống chia nhỏ nội dung thành các đoạn (chunks) phù hợp.
+5. Hệ thống tạo embedding vector cho từng chunk.
+6. Hệ thống lưu trữ các chunk và embedding vào kho kiến thức Qdrant.
+7. Hệ thống báo cáo kết quả nạp dữ liệu (số chunks thành công, số lỗi).
 
-Người vận hành hệ thống (developer/admin) có một bộ tài liệu PDF về tiền tiểu đường. Họ chạy một script để nạp tài liệu vào hệ thống RAG. Script tự động đọc PDF, chia nhỏ nội dung thành các đoạn (chunks), tạo embedding, và lưu vào kho kiến thức (Qdrant). Sau khi hoàn tất, người vận hành có thể kiểm tra số lượng chunks đã nạp thành công.
+## Alternative Flows
 
-**Why this priority**: Không có dữ liệu trong kho kiến thức thì hệ thống RAG không thể trả lời bất kỳ câu hỏi nào. Đây là bước tiên quyết.
+- 3a. Nếu file PDF bị lỗi, không đọc được hoặc không có text, hệ thống báo lỗi rõ ràng và dừng nạp file đó.
 
-**Independent Test**: Chạy script nạp PDF → Kiểm tra Qdrant có chứa đúng số lượng chunks và nội dung mẫu.
+## Acceptance Criteria
 
-**Acceptance Scenarios**:
+1. **Given** một file PDF tiền tiểu đường hợp lệ,
+**When** người vận hành chạy script nạp tài liệu,
+**Then** hệ thống đọc được toàn bộ nội dung text từ PDF, chia thành các chunks, tạo embedding, và lưu vào Qdrant thành công.
 
-1. **Given** một file PDF tiền tiểu đường hợp lệ, **When** người vận hành chạy script nạp tài liệu, **Then** hệ thống đọc được toàn bộ nội dung text từ PDF, chia thành các chunks, tạo embedding, và lưu vào Qdrant thành công.
+2. **Given** script đã chạy xong,
+**When** người vận hành kiểm tra kho kiến thức,
+**Then** có thể xác nhận số lượng chunks đã nạp và xem trước nội dung mẫu của vài chunks.
 
-2. **Given** script đã chạy xong, **When** người vận hành kiểm tra kho kiến thức, **Then** có thể xác nhận số lượng chunks đã nạp và xem trước nội dung mẫu của vài chunks.
-
-3. **Given** file PDF bị lỗi hoặc không đọc được, **When** người vận hành chạy script, **Then** hệ thống báo lỗi rõ ràng (tên file, lý do lỗi) và không nạp dữ liệu hỏng vào Qdrant.
+3. **Given** file PDF bị lỗi hoặc không đọc được,
+**When** người vận hành chạy script,
+**Then** hệ thống báo lỗi rõ ràng (tên file, lý do lỗi) và không nạp dữ liệu hỏng vào Qdrant.
 
 ## Requirements *(mandatory)*
 
@@ -55,6 +65,6 @@ Người vận hành hệ thống (developer/admin) có một bộ tài liệu P
 
 - Ở giai đoạn MVP Tuần 1, nạp tài liệu là hành động một lần (batch), chạy qua script/CLI, không phải luồng real-time.
 - Chỉ hỗ trợ file PDF có text.
-- Tài liệu đầu vào chủ yếu bằng tiếng Anh.
+- Tài liệu đầu vào chủ yếu bằng tiếng Việt.
 - Kho kiến thức (Qdrant) đã được cài đặt và chạy sẵn ở local trước khi nạp dữ liệu.
 - Chiến lược chunking sẽ sử dụng phương pháp đơn giản (fixed-size hoặc paragraph-based), không cần chunking nâng cao ở MVP.

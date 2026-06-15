@@ -6,39 +6,37 @@
 
 ---
 
-## User Scenarios & Testing *(mandatory)*
+## Main Flow *(mandatory)*
 
-### User Story 1 — Người vận hành chạy bộ test đánh giá toàn diện hệ thống (Priority: P1)
+1. Người vận hành chuẩn bị bộ test tự động (khoảng 20 câu hỏi mẫu bao gồm an toàn và nguy hiểm).
+2. Người vận hành chạy script test toàn diện hệ thống.
+3. Script tự động gửi từng câu hỏi vào hệ thống (Guardrail → RAG).
+4. Script ghi nhận kết quả cho từng câu hỏi (Câu trả lời hợp lệ / Từ chối hợp lệ / Lỗi).
+5. Script tính toán các chỉ số Retrieval Accuracy (%) và Guardrail Coverage (%).
+6. Script tạo và hiển thị báo cáo tổng kết trên Terminal, highlight các câu hỏi thất bại.
 
-Sau khi hoàn thành việc nạp tài liệu và cấu hình Guardrail, người vận hành muốn đánh giá toàn diện hệ thống bằng cách chạy một script test chứa khoảng 20 câu hỏi mẫu (bao gồm cả câu hỏi an toàn và câu hỏi nguy hiểm). Script tự động chạy từng câu hỏi, ghi nhận kết quả (chấp nhận/từ chối), và tạo báo cáo tổng kết.
+## Alternative Flows
 
-**Why this priority**: Đây là cách duy nhất để xác nhận hệ thống đạt các chỉ số Success Metrics trước khi kết thúc MVP Tuần 1.
+- 2a. Người vận hành muốn test nhanh 1 câu hỏi cụ thể, họ gửi trực tiếp câu hỏi qua Terminal và hệ thống hiển thị kết quả chi tiết (phân loại Guardrail, context, answer).
+- 3a. Nếu hệ thống gặp lỗi kỹ thuật ở một câu hỏi, script ghi nhận lỗi cho câu hỏi đó và tiếp tục chạy các câu hỏi còn lại.
 
-**Independent Test**: Chạy script test → Xem báo cáo kết quả hiển thị trên Terminal, kiểm tra các metrics đạt ngưỡng.
+## Acceptance Criteria
 
-**Acceptance Scenarios**:
+1. **Given** hệ thống đã nạp tài liệu và cấu hình Guardrail,
+**When** người vận hành chạy script test chứa 20 câu hỏi mẫu,
+**Then** script chạy qua tất cả câu hỏi và hiển thị kết quả từng câu.
 
-1. **Given** hệ thống đã nạp tài liệu và cấu hình Guardrail, **When** người vận hành chạy script test chứa 20 câu hỏi mẫu, **Then** script chạy qua tất cả câu hỏi và hiển thị kết quả từng câu (Câu trả lời / Từ chối).
+2. **Given** script đã chạy xong,
+**When** người vận hành xem báo cáo,
+**Then** báo cáo hiển thị tổng kết: Retrieval Accuracy (%) và Guardrail Coverage (%).
 
-2. **Given** script đã chạy xong, **When** người vận hành xem báo cáo, **Then** báo cáo hiển thị tổng kết: Retrieval Accuracy (%) và Guardrail Coverage (%).
+3. **Given** kết quả test,
+**When** Retrieval Accuracy < 90% hoặc Guardrail Coverage < 100%,
+**Then** báo cáo highlight rõ các câu hỏi thất bại để người vận hành debug.
 
-3. **Given** kết quả test, **When** Retrieval Accuracy < 90% hoặc Guardrail Coverage < 100%, **Then** báo cáo highlight rõ các câu hỏi thất bại để người vận hành debug.
-
----
-
-### User Story 2 — Người vận hành kiểm tra từng câu hỏi cụ thể (Priority: P2)
-
-Người vận hành muốn test nhanh 1 câu hỏi cụ thể (không cần chạy toàn bộ bộ test) để debug hoặc verify sau khi sửa prompt/config.
-
-**Why this priority**: Hỗ trợ debug nhanh trong quá trình phát triển, không phải chờ chạy full test suite.
-
-**Independent Test**: Gửi 1 câu hỏi cụ thể → Xem kết quả chi tiết (input, guardrail classification, retrieved context, answer).
-
-**Acceptance Scenarios**:
-
-1. **Given** hệ thống đang chạy, **When** người vận hành gửi 1 câu hỏi qua Terminal, **Then** hệ thống hiển thị kết quả chi tiết: phân loại Guardrail, context truy xuất (nếu an toàn), và câu trả lời cuối cùng.
-
----
+4. **Given** hệ thống đang chạy,
+**When** người vận hành gửi 1 câu hỏi test nhanh qua Terminal,
+**Then** hệ thống hiển thị kết quả chi tiết: phân loại Guardrail, context truy xuất (nếu an toàn), và câu trả lời cuối cùng.
 
 ### Edge Cases
 
