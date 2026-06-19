@@ -62,8 +62,7 @@
 ### Measurable Outcomes
 
 - **SC-001**: Tài liệu PDF tiền tiểu đường được nạp thành công vào kho kiến thức mà không mất dữ liệu text quan trọng.
-- **SC-002**: Truy vấn mẫu sau khi nạp trả về context chứa đúng thông tin từ tài liệu nguồn (kiểm tra thủ công ít nhất 5 truy vấn).
-- **SC-003**: Toàn bộ quá trình nạp (đọc → chunk → embed → lưu) hoàn tất trong thời gian hợp lý (dưới 5 phút cho 1 file PDF ~50 trang).
+- **SC-002**: Toàn bộ quá trình nạp (đọc → chunk → embed → lưu) hoàn tất trong thời gian hợp lý (dưới 5 phút cho 1 file PDF ~50 trang).
 
 ## Assumptions
 

@@ -11,7 +11,7 @@ import os
 
 import fitz  # PyMuPDF
 
-from src.ingestion.data_models import SourceDocument
+from src.rag.ingestion.data_models import SourceDocument
 
 logger = logging.getLogger(__name__)
 

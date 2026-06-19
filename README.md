@@ -1,14 +1,21 @@
 # DiaCareFlow
 # BR-001: DiaCareFlow — Hỗ trợ bệnh tiểu đường 
 ## Goal 
-- Hệ thống multi-agent Intelligent hỗ trợ bệnh tiểu đường cá nhân hóa
-- Tìm kiếm RAG và truy xuất thông tin Web Search để cung cấp thông tin giáo dục sức khỏe dựa trên bằng chứng y khoa cục bộ và tìm kiểm trên web theo thời gian thực
-- Tích hợp pipeline xử lý tài liệu (Parse PDF, tạo metadata, chia nhỏ tài liệu và tải lên Vector DB) cho phép người dùng bổ sung kiến thức riêng vào hệ thống.
-- AI dự kiến: Supervisor Agent, Suggestion Agent, Harm Assessment Agent, Factor Analysis Agent, Response Agent.
+- Xây dựng hệ thống Intelligent Multi-Agent cá nhân hóa hỗ trợ bệnh tiểu đường, được điều phối bởi LangGraph và định dạng cấu trúc dữ liệu bằng PydanticAI.
 
-- Hệ thống User: làm tính năng Đăng nhập/Đăng ký,lưu trữ lịch sử chat của người dùng.
-- Tích hợp API End-to-End: nối luồng giao tiếp giữa Frontend và Backend 
-- Deployment: triển khai (deploy) lên Cloud (AWS/GCP)
+- Sử dụng mô hình Gemini 2.0 Flash làm lõi xử lý ngôn ngữ tự nhiên.
+
+- Tích hợp công cụ: Tìm kiếm RAG (truy xuất từ Vector Database Qdrant) và Web Search (SearXNG) theo thời gian thực để cung cấp thông tin giáo dục sức khỏe nội bộ và trực tuyến.  (có hiện thị nguồn lúc trả kết quả ở web, giống gemini google search)
+
+- Tích hợp pipeline xử lý tài liệu (PDF parsing, chunking, tạo embeddings qua Google AI và nạp vào Qdrant) thông qua module doc_pipeline.
+
+- AI Agents dự kiến: Supervisor Agent, Suggestion Agent, Harm Assessment Agent, Factor Analysis Agent, Response Agent.
+
+- Hệ thống User: Xác thực bằng JWT, lưu trữ phiên trò chuyện (session/state của LangGraph) và lịch sử chat siêu tốc bằng Redis.
+
+- Tích hợp API End-to-End: Xây dựng Backend bằng FastAPI, kết nối luồng giao tiếp với Frontend (Next.js) và hỗ trợ trả kết quả Real-time Streaming (truyền phát luồng JSON trạng thái tác tử và nội dung).
+
+- Deployment: Triển khai lên Cloud (AWS/GCP) qua Docker.
  
 ## Success Metrics
 - Kỹ thuật: Real-time Streaming. RAG phải truy xuất tài liệu y khoa đạt trên 90%

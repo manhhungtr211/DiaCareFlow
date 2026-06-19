@@ -12,7 +12,7 @@ import uuid
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from src.config import CHUNK_OVERLAP, CHUNK_SIZE
-from src.ingestion.data_models import DocumentChunk, SourceDocument
+from src.rag.ingestion.data_models import DocumentChunk, SourceDocument
 
 logger = logging.getLogger(__name__)
 

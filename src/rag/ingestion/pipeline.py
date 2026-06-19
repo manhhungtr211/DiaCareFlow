@@ -10,11 +10,11 @@ import logging
 import os
 import time
 
-from src.ingestion.chunker import chunk_document
-from src.ingestion.embedding import EmbeddingError, embed_chunks
-from src.ingestion.data_models import IngestionError, IngestionResult
-from src.ingestion.pdf_reader import PDFReadError, read_pdf
-from src.ingestion.qdrant_store import create_collection, upsert_chunks
+from src.rag.ingestion.chunker import chunk_document
+from src.rag.ingestion.embedding import EmbeddingError, embed_chunks
+from src.rag.ingestion.data_models import IngestionError, IngestionResult
+from src.rag.ingestion.pdf_reader import PDFReadError, read_pdf
+from src.rag.ingestion.qdrant_store import create_collection, upsert_chunks
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,6 @@ def ingest_file(
     collection_name: str | None = None,
     chunk_size: int | None = None,
     chunk_overlap: int | None = None,
-    qdrant_url: str | None = None,
 ) -> IngestionResult:
     """Ingest a single PDF file into the RAG system.
 
@@ -35,7 +34,6 @@ def ingest_file(
         collection_name: Qdrant collection name override.
         chunk_size: Chunk size override.
         chunk_overlap: Chunk overlap override.
-        qdrant_url: Qdrant URL override.
 
     Returns:
         IngestionResult with processing statistics.
@@ -49,11 +47,10 @@ def ingest_file(
         logger.info("Ensuring Qdrant collection exists...")
         create_collection(
             collection_name=collection_name,
-            qdrant_url=qdrant_url,
         )
 
         # Step 2: Read PDF
-        print(f"📄 Processing: {file_name}")
+        print(f"Processing: {file_name}")
         document = read_pdf(file_path)
         logger.info("Read %d pages from '%s'.", document.total_pages, file_name)
 
@@ -75,14 +72,13 @@ def ingest_file(
         upserted = upsert_chunks(
             embedded_chunks,
             collection_name=collection_name,
-            qdrant_url=qdrant_url,
         )
         logger.info("Upserted %d points to Qdrant for '%s'.", upserted, file_name)
 
         print(
             f"   Pages: {document.total_pages} | "
             f"Chunks: {len(chunks)} | "
-            f"✅ Uploaded to Qdrant"
+            f"[OK] Uploaded to Qdrant"
         )
 
         result.success_files = 1
@@ -106,7 +102,6 @@ def ingest_directory(
     collection_name: str | None = None,
     chunk_size: int | None = None,
     chunk_overlap: int | None = None,
-    qdrant_url: str | None = None,
 ) -> IngestionResult:
     """Ingest all PDF files in a directory into the RAG system.
 
@@ -118,7 +113,6 @@ def ingest_directory(
         collection_name: Qdrant collection name override.
         chunk_size: Chunk size override.
         chunk_overlap: Chunk overlap override.
-        qdrant_url: Qdrant URL override.
 
     Returns:
         IngestionResult with aggregated statistics.
@@ -145,7 +139,6 @@ def ingest_directory(
     try:
         create_collection(
             collection_name=collection_name,
-            qdrant_url=qdrant_url,
         )
     except Exception as e:
         # If we can't even connect to Qdrant, fail immediately
@@ -161,7 +154,6 @@ def ingest_directory(
             collection_name=collection_name,
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,
-            qdrant_url=qdrant_url,
         )
         combined.success_files += file_result.success_files
         combined.failed_files += file_result.failed_files
@@ -179,7 +171,7 @@ def _handle_file_error(
     message: str,
 ) -> None:
     """Record a file processing error in the result."""
-    print(f"   ❌ Error: {error_type} — {message}")
+    print(f"   [Error] {error_type} - {message}")
     logger.error("Error processing '%s': [%s] %s", file_name, error_type, message)
     result.failed_files = 1
     result.errors.append(

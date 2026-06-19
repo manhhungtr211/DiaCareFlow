@@ -14,11 +14,12 @@ import logging
 import os
 import sys
 
-from src.ingestion.data_models import IngestionResult
-from src.ingestion.pipeline import ingest_directory, ingest_file
+from src.rag.ingestion.data_models import IngestionResult
+from src.rag.ingestion.pipeline import ingest_directory, ingest_file
+from src.rag.qa.pipeline import ask
 
 
-def _print_report(result: IngestionResult) -> None:
+def print_report(result: IngestionResult) -> None:
     """Print a formatted ingestion report to stdout."""
     print()
     print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
@@ -39,7 +40,7 @@ def _print_report(result: IngestionResult) -> None:
     print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
 
-def _cmd_ingest(args: argparse.Namespace) -> int:
+def cmd_ingest(args: argparse.Namespace) -> int:
     """Execute the ingest command.
 
     Returns:
@@ -49,7 +50,6 @@ def _cmd_ingest(args: argparse.Namespace) -> int:
     collection = args.collection
     chunk_size = args.chunk_size
     chunk_overlap = args.chunk_overlap
-    qdrant_url = args.qdrant_url
 
     try:
         if os.path.isfile(path):
@@ -57,22 +57,20 @@ def _cmd_ingest(args: argparse.Namespace) -> int:
                 file_path=path,
                 collection_name=collection,
                 chunk_size=chunk_size,
-                chunk_overlap=chunk_overlap,
-                qdrant_url=qdrant_url,
+                chunk_overlap=chunk_overlap
             )
         elif os.path.isdir(path):
             result = ingest_directory(
                 dir_path=path,
                 collection_name=collection,
                 chunk_size=chunk_size,
-                chunk_overlap=chunk_overlap,
-                qdrant_url=qdrant_url,
+                chunk_overlap=chunk_overlap
             )
         else:
             print(f"❌ Error: Path not found: {path}", file=sys.stderr)
             return 2
 
-        _print_report(result)
+        print_report(result)
 
         if result.failed_files > 0 and result.success_files > 0:
             return 1
@@ -88,6 +86,50 @@ def _cmd_ingest(args: argparse.Namespace) -> int:
         print(f"❌ System Error: {e}", file=sys.stderr)
         logging.exception("Unexpected error during ingestion")
         return 2
+
+
+def cmd_ask(args: argparse.Namespace) -> int:
+    """Execute the interactive ask command."""
+    print("\n🤖 DiaCareFlow — Hỏi đáp Y khoa về Tiểu đường")
+    print("Gõ câu hỏi hoặc 'quit'/'exit' để thoát.\n")
+    
+    # Optional top_k override from args if added later
+    top_k = getattr(args, "top_k", 3)
+    
+    while True:
+        try:
+            question = input("> ").strip()
+            if not question:
+                continue
+                
+            if question.lower() in ("quit", "exit", "q"):
+                print("Tạm biệt!")
+                break
+                
+            # Call pipeline
+            answer = ask(question, top_k=top_k)
+            
+            print("\n📋 Câu trả lời:")
+            if answer.is_refused:
+                print(f"⚠️ {answer.refuse_reason}")
+            else:
+                print(answer.text)
+                
+            if answer.sources:
+                print("\n📎 Nguồn:")
+                for source in answer.sources:
+                    print(f"- {source.source} (score: {source.score:.3f})")
+                    print(f"  {source.content}")
+            print()
+            
+        except KeyboardInterrupt:
+            print("\nTạm biệt!")
+            break
+        except Exception as e:
+            print(f"\n❌ Lỗi: {e}")
+            logging.exception("Error during Q&A")
+            
+    return 0
 
 
 def main() -> None:
@@ -133,6 +175,18 @@ def main() -> None:
         help="Qdrant server URL (default: http://localhost:6333)",
     )
 
+    # ask command
+    ask_parser = subparsers.add_parser(
+        "ask",
+        help="Interactive Q&A using RAG",
+    )
+    ask_parser.add_argument(
+        "--top-k",
+        type=int,
+        default=3,
+        help="Number of chunks to retrieve (default: 3)",
+    )
+
     args = parser.parse_args()
 
     if args.command is None:
@@ -147,7 +201,10 @@ def main() -> None:
     )
 
     if args.command == "ingest":
-        exit_code = _cmd_ingest(args)
+        exit_code = cmd_ingest(args)
+        sys.exit(exit_code)
+    elif args.command == "ask":
+        exit_code = cmd_ask(args)
         sys.exit(exit_code)
     else:
         parser.print_help()
