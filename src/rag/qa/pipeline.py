@@ -42,8 +42,7 @@ def ask(question_text: str, top_k: int = 3) -> Answer:
         context = retrieve(query, top_k=top_k)
         
         # 3. Generate
-        answer = ""
-        #answer = generate(query, context)
+        answer = generate(query, context)
         
         return answer
         

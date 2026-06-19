@@ -38,7 +38,7 @@ def retrieve(query: Query, top_k: int = 3, score_threshold: float = 0.3) -> Retr
         chunks = []
         for hit in search_result.points:
             chunk = ChunkResult(
-                content=hit.payload.get("text", ""),
+                content=hit.payload.get("content", ""),
                 source=hit.payload.get("source", "Unknown"),
                 score=hit.score
             )

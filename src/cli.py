@@ -119,7 +119,6 @@ def cmd_ask(args: argparse.Namespace) -> int:
                 print("\n📎 Nguồn:")
                 for source in answer.sources:
                     print(f"- {source.source} (score: {source.score:.3f})")
-                    print(f"  {source.content}")
             print()
             
         except KeyboardInterrupt:
