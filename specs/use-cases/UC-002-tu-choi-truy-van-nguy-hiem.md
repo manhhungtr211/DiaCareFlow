@@ -3,7 +3,7 @@
 **Feature ID**: `UC-002`
 
 **Input**: BR-001 (MVP Tuần 1) — Luồng bảo vệ: Hệ thống phát hiện và từ chối 100% các câu hỏi yêu cầu kê đơn thuốc, chẩn đoán bệnh thay bác sĩ, hoặc mô tả tình huống cấp cứu nguy hiểm.
-
+(MVP tuần 1)
 ---
 
 ## Main Flow *(mandatory)*

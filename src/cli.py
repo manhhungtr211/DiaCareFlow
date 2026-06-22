@@ -17,6 +17,7 @@ import sys
 from src.rag.ingestion.data_models import IngestionResult
 from src.rag.ingestion.pipeline import ingest_directory, ingest_file
 from src.rag.qa.pipeline import ask
+from src.evaluation.runner import run_evaluation_suite, print_report as print_eval_report
 
 
 def print_report(result: IngestionResult) -> None:
@@ -131,6 +132,24 @@ def cmd_ask(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_evaluate(args: argparse.Namespace) -> int:
+    """Execute the evaluate command."""
+    data_path = args.data
+    
+    if not os.path.isfile(data_path):
+        print(f"❌ Error: Test data file not found: {data_path}", file=sys.stderr)
+        return 2
+        
+    try:
+        report = run_evaluation_suite(data_path)
+        print_eval_report(report)
+        return 0 if report.failed_cases == 0 else 1
+    except Exception as e:
+        print(f"❌ System Error: {e}", file=sys.stderr)
+        logging.exception("Unexpected error during evaluation")
+        return 2
+
+
 def main() -> None:
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
@@ -186,6 +205,18 @@ def main() -> None:
         help="Number of chunks to retrieve (default: 3)",
     )
 
+    # evaluate command
+    eval_parser = subparsers.add_parser(
+        "evaluate",
+        help="Run system evaluation using sample queries",
+    )
+    eval_parser.add_argument(
+        "--data",
+        type=str,
+        default="data/test_cases.json",
+        help="Path to the JSON file containing test cases (default: data/test_cases.json)",
+    )
+
     args = parser.parse_args()
 
     if args.command is None:
@@ -204,6 +235,9 @@ def main() -> None:
         sys.exit(exit_code)
     elif args.command == "ask":
         exit_code = cmd_ask(args)
+        sys.exit(exit_code)
+    elif args.command == "evaluate":
+        exit_code = cmd_evaluate(args)
         sys.exit(exit_code)
     else:
         parser.print_help()

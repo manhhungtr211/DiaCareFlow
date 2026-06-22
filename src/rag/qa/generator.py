@@ -29,6 +29,7 @@ QUY TẮC QUAN TRỌNG:
 1. CHỈ sử dụng thông tin có trong phần Tài liệu cung cấp. Không tự bịa đặt hoặc dùng kiến thức bên ngoài.
 2. Nếu Tài liệu không chứa thông tin để trả lời câu hỏi, hãy nói rõ: "Tôi không tìm thấy thông tin về chủ đề này trong tài liệu hiện có."
 3. Trả lời bằng ngôn ngữ phổ thông, dễ hiểu, rõ ràng.
+4. 
 
 Tài liệu cung cấp:
 {context_text}

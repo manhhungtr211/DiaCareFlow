@@ -1,5 +1,5 @@
 # DiaCareFlow
-# BR-001: DiaCareFlow — Hỗ trợ bệnh tiểu đường 
+# BR: DiaCareFlow — Hỗ trợ bệnh tiểu đường 
 ## Goal 
 - Xây dựng hệ thống Intelligent Multi-Agent cá nhân hóa hỗ trợ bệnh tiểu đường, được điều phối bởi LangGraph và định dạng cấu trúc dữ liệu bằng PydanticAI.
 

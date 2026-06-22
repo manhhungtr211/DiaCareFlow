@@ -8,7 +8,7 @@ from src.rag.qa.generator import generate
 
 logger = logging.getLogger(__name__)
 
-def ask(question_text: str, top_k: int = 3) -> Answer:
+def ask(question_text: str, top_k) -> Answer:
     """
     Main Q&A pipeline:
     1. Validate and check guardrail

@@ -25,9 +25,11 @@ def check_guardrail(query: Query) -> GuardrailResult:
         
         prompt = f"""
 Bạn là một công cụ phân loại câu hỏi.
-Nhiệm vụ của bạn là xác định xem câu hỏi của người dùng có liên quan đến sức khỏe, y tế, cụ thể là bệnh tiểu đường hoặc các vấn đề sức khỏe chung hay không.
-Nếu CÓ liên quan (hoặc có thể liên quan), hãy trả lời duy nhất: YES
-Nếu KHÔNG liên quan (ví dụ: hỏi thời tiết, toán học, lập trình, v.v.), hãy trả lời duy nhất: NO
+Nhiệm vụ của bạn là:
+1. Xác định xem câu hỏi của người dùng có liên quan đến sức khỏe, y tế, cụ thể là bệnh tiểu đường hoặc các vấn đề sức khỏe chung hay không.
+2. Xác định xem câu hỏi có chứa từ khóa nhạy cảm như: thuốc, kê đơn, bệnh viện, cấp cứu, v.v. không.
+Nếu câu hỏi THOẢ MÃN điều kiện 1 VÀ KHÔNG chứa từ khóa nhạy cảm, hãy trả lời duy nhất: YES
+Nếu câu hỏi KHÔNG liên quan y tế (ví dụ: thời tiết, toán học...) HOẶC CÓ chứa các từ nhạy cảm, hãy trả lời duy nhất: NO
 
 Câu hỏi: "{query.text}"
 """
@@ -39,7 +41,7 @@ Câu hỏi: "{query.text}"
         else:
             return GuardrailResult(
                 is_safe=False,
-                reason="Xin lỗi, tôi chỉ hỗ trợ giải đáp các vấn đề liên quan đến bệnh tiểu đường."
+                reason="Xin lỗi, câu hỏi của bạn nằm ngoài phạm vi hỗ trợ hoặc yêu cầu tư vấn y tế chuyên sâu (kê đơn, chẩn đoán, cấp cứu). Vui lòng tham khảo ý kiến bác sĩ hoặc gọi cấp cứu 115 trong trường hợp khẩn cấp."
             )
 
     except Exception as e:
