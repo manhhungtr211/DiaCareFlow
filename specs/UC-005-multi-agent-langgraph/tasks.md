@@ -14,8 +14,8 @@
 
 **Purpose**: Create the `src/agents/` module structure and install LangGraph dependency
 
-- [ ] T001 Create `src/agents/` package directory with `src/agents/__init__.py` and `src/agents/nodes/__init__.py`
-- [ ] T002 Add `langgraph>=1.0.0` to `requirements.txt` and install dependencies
+- [x] T001 Create `src/agents/` package directory with `src/agents/__init__.py` and `src/agents/nodes/__init__.py`
+- [x] T002 Add `langgraph>=1.2.6` to `requirements.txt` and install dependencies
 
 ---
 
@@ -25,7 +25,7 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T003 Implement `SafetyCategory` enum(fields: question, is_safe, safety_category) and `AgentState` in `src/agents/state.py` per data-model.md schema (user_input, messages, harm_task, suggestion_context, messageId)
+- [x] T003 Implement `SafetyCategory` enum(fields: question, is_safe, safety_category) and `AgentState` in `src/agents/state.py` per data-model.md schema (user_input, messages, harm_task, suggestion_context, messageId)
 
 **Checkpoint**: Foundation ready — `AgentState` and config defined, user story implementation can begin
 
@@ -38,13 +38,13 @@
 **Independent Test**: Call `ask_langgraph("Tiền tiểu đường là gì?")` from Python and verify the returned Answer contains content from RAG documents plus source citations
 
 ### Implementation for User Story 1
-- [ ] T005 [US1] Implement Harm Assessment Agent node in `src/agents/nodes/harm_assessment.py` — wrap `src/rag/qa/guardrail.py`, evaluate question safety, set `is_safe`, `safety_category` (SAFE/PRESCRIPTION/DIAGNOSIS/EMERGENCY), and `refusal_message` in AgentState. Include try/catch per FR-007 with error written to state.
-- [ ] T006 [US1] append "harm_assessment" to nodes_visited, validate non-empty question per edge case: return error state for empty/special-char-only input. append "supervisor" to nodes_visited, routes to Supervisor Agent node in `src/agents/nodes/supervisor.py` — receives question, initializes `nodes_visited`, 
+- [ ] T005 [US1] Implement Harm Assessment Agent node in `src/agents/nodes/harm_assessment.py` — wrap `src/rag/qa/guardrail.py`, evaluate question safety, set `is_safe`, `safety_category` (SAFE/PRESCRIPTION/DIAGNOSIS/EMERGENCY), and `refusal_message` in AgentState. Include try/catch per FR-007 with error written to state ->? nếu input text là trống hoặc chứa ký tự đặc biệt thì trả kết quả là vui lòng nhập lại câu hỏi, không chuyển tiếp node khác
+- [x] T006 [US1] append "harm_assessment" to nodes_visited, validate non-empty question per edge case: return error state for empty/special-char-only input, routes to Supervisor Agent node in `src/agents/nodes/supervisor.py` — receives question, initializes `nodes_visited`, 
 
-- [ ] T007 [US1] Implement RAG Agent node in `src/agents/nodes/rag_agent.py` — wrap `src/rag/qa/retriever.py`, retrieve document chunks for the question, write `rag_context` and `rag_query_vector` to `AgentState`. Include try/catch per FR-007 (Qdrant unavailable → error state with clear connection message).
-- [ ] T008 [US1] Implement Response Agent node in `src/agents/nodes/response_agent.py` — wrap `src/rag/qa/generator.py`, read `rag_context` from state, generate final answer, write `final_answer` and `sources` to `AgentState`. Include try/catch per FR-007.
-- [ ] T009 [US1] Build StateGraph and compile in `src/agents/graph.py` — add nodes (supervisor, harm_assessment, rag_agent, response_agent), add edges (START → harm_assessment → supervisor), add conditional edge after harm_assessment (is_safe=True → rag_agent → response_agent → END, is_safe=False → END)
-- [ ] T010 [US1] Implement entry point `ask_langgraph(question, top_k)` in `src/agents/pipeline.py` — instantiate compiled graph, invoke with initial `AgentState`, measure `processing_time_ms`, convert final state to `Answer` dataclass (map final_answer→text, sources→sources, refusal_message→refuse_reason, is_safe→is_refused), handle error state with fallback Answer.
+- [x] T007 [US1] Implement RAG Agent node in `src/agents/nodes/rag_agent.py` — wrap `src/rag/qa/retriever.py`, retrieve document chunks for the question, write `rag_context` and `rag_query_vector` to `AgentState`. Include try/catch per FR-007 (Qdrant unavailable → error state with clear connection message).
+- [x] T008 [US1] Implement Response Agent node in `src/agents/nodes/response_agent.py` — wrap `src/rag/qa/generator.py`, read `rag_context` from state, generate final answer, write `final_answer` and `sources` to `AgentState`. Include try/catch per FR-007.
+- [x] T009 [US1] Build StateGraph and compile in `src/agents/graph.py` — add nodes (supervisor, harm_assessment, rag_agent, response_agent), add edges (START → harm_assessment → supervisor), add conditional edge after harm_assessment (is_safe=True → rag_agent → response_agent → END, is_safe=False → END)
+- [x] T010 [US1] Implement entry point `ask_langgraph(question, top_k)` in `src/agents/pipeline.py` — instantiate compiled graph, invoke with initial `AgentState`, measure `processing_time_ms`, convert final state to `Answer` dataclass (map final_answer→text, sources→sources, refusal_message→refuse_reason, is_safe→is_refused), handle error state with fallback Answer.
 
 **Checkpoint**: At this point, the full happy-path pipeline works — safe questions produce RAG-based answers through the LangGraph multi-agent graph.
 
@@ -58,9 +58,9 @@
 
 ### Implementation for User Story 2
 
-- [ ] T011 [US2] Add refusal message mapping in `src/agents/nodes/harm_assessment.py` — map `SafetyCategory` to standard medical refusal messages: PRESCRIPTION → "Xin lỗi, tôi không thể kê đơn thuốc. Vui lòng tham khảo ý kiến bác sĩ.", DIAGNOSIS → "Xin lỗi, tôi không thể chẩn đoán bệnh. Vui lòng đến cơ sở y tế.", EMERGENCY → "⚠️ Tình huống khẩn cấp! Vui lòng gọi 115 hoặc đến phòng cấp cứu ngay."
-- [ ] T012 [US2] Validate conditional routing in `src/agents/graph.py` — ensure when `is_safe=False`, the graph routes directly to END, bypassing rag_agent and response_agent nodes entirely.
-- [ ] T013 [US2] Handle refusal path in `src/agents/pipeline.py` — when `is_safe=False` in final state, construct Answer with `is_refused=True`, `refuse_reason=safety_category`, `text=refusal_message`, and empty sources list.
+- [x] T011 [US2] Add refusal message mapping in `src/agents/nodes/harm_assessment.py` — map `SafetyCategory` to standard medical refusal messages: PRESCRIPTION → "Xin lỗi, tôi không thể kê đơn thuốc. Vui lòng tham khảo ý kiến bác sĩ.", DIAGNOSIS → "Xin lỗi, tôi không thể chẩn đoán bệnh. Vui lòng đến cơ sở y tế.", EMERGENCY → "⚠️ Tình huống khẩn cấp! Vui lòng gọi 115 hoặc đến phòng cấp cứu ngay."
+- [x] T012 [US2] Validate conditional routing in `src/agents/graph.py` — ensure when `is_safe=False`, the graph routes directly to END, bypassing rag_agent and response_agent nodes entirely.
+- [x] T013 [US2] Handle refusal path in `src/agents/pipeline.py` — when `is_safe=False` in final state, construct Answer with `is_refused=True`, `refuse_reason=safety_category`, `text=refusal_message`, and empty sources list.
 
 **Checkpoint**: Harm Assessment path fully works — dangerous queries are blocked with category-specific medical refusals.
 
@@ -74,8 +74,8 @@
 
 ### Implementation for User Story 3
 
-- [ ] T014 [US3] Modify `src/rag/qa/pipeline.py` to delegate to `src/agents/pipeline.ask_langgraph()` per contract `cli-ask-v2.md` — import `ask_langgraph` from `src.agents.pipeline`, forward `question_text` and `top_k` params, return the resulting `Answer` object unchanged.
-- [ ] T015 [US3] Verify `src/cli.py` requires NO changes — confirm it still imports `ask` from `src.rag.qa.pipeline` and output formatting remains unchanged (📋/📎 format).
+- [x] T014 [US3] Modify `src/rag/qa/pipeline.py` to delegate to `src/agents/pipeline.ask_langgraph()` per contract `cli-ask-v2.md` — import `ask_langgraph` from `src.agents.pipeline`, forward `question_text` and `top_k` params, return the resulting `Answer` object unchanged.
+- [x] T015 [US3] Verify `src/cli.py` requires NO changes — confirm it still imports `ask` from `src.rag.qa.pipeline` and output formatting remains unchanged (📋/📎 format).
 
 **Checkpoint**: CLI backward compatibility verified — `python -m src.cli ask` uses the new LangGraph pipeline transparently.
 
@@ -86,9 +86,9 @@
 
 **Purpose**: Edge case handling, error resilience, and validation across all stories
 
-- [ ] T019 Add input validation in `src/agents/nodes/supervisor.py` — handle empty strings, special-char-only input (e.g., `!!!@@@`), return user-friendly error messages ("Câu hỏi không hợp lệ", "Vui lòng nhập câu hỏi rõ ràng")
-- [ ] T020 Add structured logging across all agent nodes — log node entry/exit, state transitions, timing, and errors using Python `logging` module for debugging
-- [ ] T021 [P] Add error resilience for LLM API failures — handle rate-limit and timeout in harm_assessment, rag_agent, and response_agent nodes with fallback error messages per FR-007
+- [x] T019 Add input validation in `src/agents/nodes/supervisor.py` — handle empty strings, special-char-only input (e.g., `!!!@@@`), return user-friendly error messages ("Câu hỏi không hợp lệ", "Vui lòng nhập câu hỏi rõ ràng")
+- [x] T020 Add structured logging across all agent nodes — log node entry/exit, state transitions, timing, and errors using Python `logging` module for debugging
+- [x] T021 [P] Add error resilience for LLM API failures — handle rate-limit and timeout in harm_assessment, rag_agent, and response_agent nodes with fallback error messages per FR-007
 - [ ] T022 [P] Update project documentation — add LangGraph architecture notes to README or docs/, update quickstart.md with Phase 1/Phase 2 switching instructions
 - [ ] T023 Run quickstart.md validation scenarios end-to-end — execute all 6 scenarios (happy path, prescription refusal, emergency refusal, backward compatibility, evaluation suite, edge cases) and verify expected outputs
 

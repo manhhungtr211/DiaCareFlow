@@ -16,7 +16,7 @@ import sys
 
 from src.rag.ingestion.data_models import IngestionResult
 from src.rag.ingestion.pipeline import ingest_directory, ingest_file
-from src.rag.qa.pipeline import ask
+from src.agents.pipeline import ask_langgraph as ask
 from src.evaluation.runner import run_evaluation_suite, print_report as print_eval_report
 
 
