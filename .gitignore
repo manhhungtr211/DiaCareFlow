@@ -35,3 +35,13 @@ htmlcov/
 
 # Logs
 *.log
+
+# Node.js / Frontend
+node_modules/
+frontend/dist/
+frontend/build/
+*.tsbuildinfo
+
+#AI
+.AGENT.md
+.CLAUDE.md

@@ -1,0 +1,27 @@
+/* ============================================
+   ChatPage — Full-Height Chat Layout
+   ============================================ */
+
+.chat-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+  background: var(--gray-50);
+}
+
+.chat-page__main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-width: 100%;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 640px) {
+  .chat-page {
+    height: 100dvh;
+  }
+}

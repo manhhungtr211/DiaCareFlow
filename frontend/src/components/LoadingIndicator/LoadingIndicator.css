@@ -1,0 +1,79 @@
+/* ============================================
+   LoadingIndicator — Typing Dots Animation
+   ============================================ */
+
+.loading-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  align-self: flex-start;
+  animation: bubble-appear 0.3s ease;
+}
+
+@keyframes bubble-appear {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.loading-indicator__avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--emerald-green), var(--emerald-green-light));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
+}
+
+.loading-indicator__avatar-icon {
+  font-size: var(--font-size-lg);
+}
+
+.loading-indicator__dots {
+  display: flex;
+  gap: 6px;
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+}
+
+.loading-indicator__dot {
+  width: 8px;
+  height: 8px;
+  background: var(--primary-blue-light);
+  border-radius: var(--radius-full);
+  animation: dot-bounce 1.4s ease-in-out infinite;
+}
+
+.loading-indicator__dot:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.loading-indicator__dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.loading-indicator__dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes dot-bounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-8px);
+    opacity: 1;
+  }
+}

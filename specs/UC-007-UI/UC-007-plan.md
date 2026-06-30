@@ -11,7 +11,7 @@ Bản kế hoạch triển khai cho giao diện chat ReactJS giao tiếp với F
 *(Chưa có nguyên tắc cụ thể trong constitution.md ngoài cấu trúc boilerplate)*
 - Giao diện đáp ứng tính độc lập (nằm riêng trong thư mục frontend).
 - Đơn giản, gọn nhẹ.
-
+- Phân chia thành các component riêng biệt: pages, service, hooks, asses, jsx riêng, css riêng,....
 ## Proposed Changes
 
 ### Phase 1: Khởi tạo dự án Vite React
@@ -19,11 +19,11 @@ Bản kế hoạch triển khai cho giao diện chat ReactJS giao tiếp với F
 - Dọn dẹp boilerplate mặc định của Vite, cấu trúc lại `index.html` và `package.json`.
 
 ### Phase 2: Hệ thống CSS & Branding
-- **`frontend/src/index.css`**: Định nghĩa biến CSS (`--primary-blue`, `--emerald-green`, v.v.), typography và cấu hình reset CSS toàn cục.
-- **`frontend/src/App.css`**: Styling cho giao diện chat: bong bóng (chat bubbles), vùng tin nhắn, input form và trạng thái loading. Thêm class riêng cho tin nhắn từ chối.
+ Định nghĩa biến CSS (`--primary-blue`, `--emerald-green`, v.v.), typography và cấu hình reset CSS toàn cục.
+Styling cho giao diện chat: bong bóng (chat bubbles), vùng tin nhắn, input form và trạng thái loading. Thêm class riêng cho tin nhắn từ chối.
 
 ### Phase 3: Xây dựng Giao diện & Logic
-- **`frontend/src/App.tsx`**: 
+
   - State quản lý lịch sử chat: `messages` (`{ id, role, content, isRefused }`).
   - Hàm `sendMessage`: gọi API `/api/chat` bằng `fetch`, xử lý kết quả dạng text, bắt lỗi E1, E2.
   - Tự động cuộn xuống cuối màn hình (`scrollIntoView`).

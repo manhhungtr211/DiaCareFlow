@@ -35,6 +35,22 @@ class ChatResponse(BaseModel):
     text: str = Field(
         ..., description="The generated answer or a fallback string."
     )
+    is_refused: bool = Field(
+        default=False,
+        description="True if the question was blocked by guardrails or refused by the LLM.",
+    )
+    refuse_reason: str | None = Field(
+        default=None,
+        description="The reason for refusal, if is_refused is true.",
+    )
+    sources: list[SourceItem] = Field(
+        default_factory=list,
+        description="List of sources used. Empty if refused.",
+    )
+    metadata: dict = Field(
+        default_factory=dict,
+        description='Additional information, e.g., {"processing_time_ms": 1200}.',
+    )
 
 
 class HealthResponse(BaseModel):
@@ -48,4 +64,4 @@ class HealthResponse(BaseModel):
     )
     version: str = Field(
         default="1.0.0", description="API version."
-    ) #bỏ cái này
+    ) 

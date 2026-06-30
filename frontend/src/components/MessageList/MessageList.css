@@ -1,0 +1,106 @@
+/* ============================================
+   MessageList — Chat Area Styles
+   ============================================ */
+
+.message-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  scroll-behavior: smooth;
+}
+
+.message-list__anchor {
+  height: 1px;
+  flex-shrink: 0;
+}
+
+/* ---- Empty State ---- */
+.message-list__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  text-align: center;
+  padding: var(--spacing-2xl);
+  animation: fade-in 0.5s ease;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.message-list__empty-icon {
+  font-size: 4rem;
+  margin-bottom: var(--spacing-lg);
+  animation: pulse-gentle 2s ease-in-out infinite;
+}
+
+@keyframes pulse-gentle {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+.message-list__empty-title {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--gray-800);
+  margin-bottom: var(--spacing-sm);
+}
+
+.message-list__empty-text {
+  font-size: var(--font-size-base);
+  color: var(--gray-500);
+  margin-bottom: var(--spacing-xl);
+}
+
+/* ---- Suggestion Chips ---- */
+.message-list__suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  justify-content: center;
+}
+
+.message-list__suggestion {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--primary-blue-50);
+  color: var(--primary-blue);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: default;
+  transition: background var(--transition-fast);
+  border: 1px solid transparent;
+}
+
+.message-list__suggestion:hover {
+  background: var(--primary-blue);
+  color: var(--white);
+  border-color: var(--primary-blue);
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 640px) {
+  .message-list {
+    padding: var(--spacing-md);
+    gap: var(--spacing-sm);
+  }
+
+  .message-list__empty {
+    padding: var(--spacing-lg);
+  }
+
+  .message-list__empty-title {
+    font-size: var(--font-size-xl);
+  }
+
+  .message-list__suggestions {
+    flex-direction: column;
+    align-items: center;
+  }
+}
