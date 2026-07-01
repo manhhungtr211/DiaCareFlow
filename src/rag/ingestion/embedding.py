@@ -5,6 +5,7 @@ import logging
 import uuid
 
 from langchain_huggingface import HuggingFaceEmbeddings
+from FlagEmbedding import BGEM3FlagModel
 
 from src.config import EMBEDDING_MODEL
 from src.rag.ingestion.data_models import DocumentChunk, EmbeddedChunk
@@ -24,19 +25,27 @@ def embed_chunks(chunks: list[DocumentChunk]) -> list[EmbeddedChunk]:
     # Sử dụng trực tiếp model keepitreal/vietnamese-sbert từ HuggingFace 
     # thay vì lấy từ EMBEDDING_MODEL trong .env (đang chứa tên model của Google)
     print(f"Embedding mode: {EMBEDDING_MODEL}")
+    # Sử dụng BGE-M3 để nhúng cả câu hỏi lẫn tài liệu (mô hình đa nhiệm)
+    embeddings_model = BGEM3FlagModel('BAAI/bge-m3', use_fp16=True)
+    '''
     embeddings_model = HuggingFaceEmbeddings(
         model_name=EMBEDDING_MODEL,
         model_kwargs={'device': 'cpu'},
         encode_kwargs={'normalize_embeddings': True}
     )
-
+'''
     # Extract text contents for batch embedding
     texts = [chunk.content for chunk in chunks]
 
     logger.info("Generating embeddings for %d chunks...", len(texts))
 
     try:
-        vectors = embeddings_model.embed_documents(texts)
+        encoded_result = embeddings_model.encode(
+            texts, 
+            batch_size=12, 
+            max_length=8192
+        )
+        vectors = encoded_result['dense_vecs'].tolist()
     except Exception as e:
         raise EmbeddingError(
             f"Failed to generate embeddings: {e}"

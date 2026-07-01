@@ -23,9 +23,12 @@ CHUNK_OVERLAP: int = int(os.getenv("CHUNK_OVERLAP", "300"))
 # --- Qdrant settings ---
 QDRANT_URL: str = os.getenv("QDRANT_URL")
 COLLECTION_NAME: str = os.getenv("QDRANT_COLLECTION")
-VECTOR_SIZE: int = int(os.getenv("VECTOR_SIZE", "768"))
+VECTOR_SIZE: int = int(os.getenv("VECTOR_SIZE"))
 
 # --- Groq AI settings ---
 GROQ_API_KEY: str = os.getenv("GROQ_API_KEY")
-EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL")
+#EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL")
 GENERATIVE_MODEL: str = os.getenv("MODEL")
+
+# --- Jina AI settings ---
+JINA_API_KEY: str = os.getenv("JINA_API_KEY")

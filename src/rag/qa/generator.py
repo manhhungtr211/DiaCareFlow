@@ -21,6 +21,11 @@ def generate(query: Query, context: RetrievedContext) -> Answer:
     # 1. Prepare context text
     context_text = "\n\n".join([f"--- Đoạn {i+1} ---\n{chunk.content}" for i, chunk in enumerate(context.chunks)])
     
+    print("\n" + "="*50)
+    print("KẾT QUẢ RETRIEVED TỪ VECTOR DB:")
+    print(context_text)
+    print("="*50 + "\n")
+    
     # 2. Build prompt
     prompt = f"""
 Bạn là một trợ lý y tế chuyên về bệnh tiểu đường. Nhiệm vụ của bạn là trả lời câu hỏi của người dùng DỰA VÀO phần tài liệu được cung cấp dưới đây.

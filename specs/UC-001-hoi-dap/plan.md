@@ -7,7 +7,7 @@
 
 **Tái sử dụng từ UC-003** (đã có sẵn):
 - Qdrant server (Docker, port 6333) + collection `medical_documents`
-- Embedding model: `keepitreal/vietnamese-sbert` via `HuggingFaceEmbeddings`
+- Embedding model: `BAAI/bge-m3`
 - Config: `src/config.py` (QDRANT_URL, COLLECTION_NAME, EMBEDDING_MODEL, VECTOR_SIZE)
 - Data models: `src/ingestion/data_models.py`
 
@@ -28,7 +28,7 @@ src/
      ├── qa/                          # [NEW] Module hỏi đáp
      │   ├── __init__.py
      │   ├── guardrail.py             # Kiểm tra câu hỏi an toàn
-     │   ├── retriever.py             # Truy xuất top-k chunks từ Qdrant
+     │   ├── retriever.py             
      │   ├── generator.py             # Sinh câu trả lời bằng LLM (Gemini)
      │   ├── pipeline.py              # Orchestrate: guardrail → retrieve → generate
      │   └── data_models.py           # Dataclasses cho Q&A (Query, Answer, etc.)
@@ -101,11 +101,14 @@ Xem chi tiết tại [data-model.md](data-model.md).
 
 ### 3. `src/qa/retriever.py` — Truy xuất tài liệu
 
-**Chức năng**: Tìm top-k chunks liên quan nhất từ Qdrant.
+**Chức năng**: Sử dụng 2-Stage Retrieval Pipeline
 
 **Logic**:
-1. Tạo embedding vector cho câu hỏi (cùng model `vietnamese-sbert` đã dùng khi nạp)
-2. Query Qdrant collection `medical_documents` với `search()`, lấy top-5, score threshold ≥ 0.3
+Stage 1:
+1. Tạo embedding vector cho câu hỏi
+2. Query Qdrant collection `medical_documents_m3`  lấy top-20 chunks liên quan nhất để tối đa hóa khả năng quét trúng thông tin
+State 2:
+1. Sử dụng Jina Reranker thông tin Jina_API_KEY để đánh giá lại từng chunk sâu sắc hơn dựa vào câu hỏi, sau đó lấy top_k=3 chunk có điểm cao nhất
 3. Trả về `RetrievedContext` chứa danh sách `ChunkResult`
 
 **Tái sử dụng**: `src/config.py` (QDRANT_URL, COLLECTION_NAME, EMBEDDING_MODEL), `qdrant_store.get_client()`

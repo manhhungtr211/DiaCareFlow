@@ -11,10 +11,12 @@ export function Header() {
             <p className="header__tagline">Hỗ trợ tư vấn tiểu đường thông minh</p>
           </div>
         </div>
+        {/*
         <div className="header__status">
           <span className="header__status-dot" />
           <span className="header__status-text">Online</span>
         </div>
+        */}
       </div>
     </header>
   );

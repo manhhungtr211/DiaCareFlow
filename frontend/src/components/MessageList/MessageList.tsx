@@ -10,6 +10,7 @@ interface MessageListProps {
 }
 
 export function MessageList({ messages, isLoading }: MessageListProps) {
+
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

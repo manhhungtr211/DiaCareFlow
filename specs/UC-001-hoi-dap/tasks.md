@@ -20,6 +20,7 @@
 - [x] T008 [P] [US1] Implement Generator in `src/rag/qa/generator.py` using Gemini API
 - [x] T009 [US1] Implement Orchestrator in `src/rag/qa/pipeline.py` connecting guardrail -> retrieve -> generate
 - [x] T010 [US1] Implement CLI command `ask` in `src/cli.py`
+- [x] T011 [US1] Refactor Retriever for 2-stage retrieval (Qdrant top 20 + Jina Reranker top 3)
 
 ## Phase 4: Polish & Validation
 
