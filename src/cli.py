@@ -94,9 +94,6 @@ def cmd_ask(args: argparse.Namespace) -> int:
     print("\n🤖 DiaCareFlow — Hỏi đáp Y khoa về Tiểu đường")
     print("Gõ câu hỏi hoặc 'quit'/'exit' để thoát.\n")
     
-    # Optional top_k override from args if added later
-    top_k = getattr(args, "top_k", 3)
-    
     while True:
         try:
             question = input("> ").strip()
@@ -108,7 +105,7 @@ def cmd_ask(args: argparse.Namespace) -> int:
                 break
                 
             # Call pipeline
-            answer = ask(question, top_k=top_k)
+            answer = ask(question)
             
             print("\n📋 Câu trả lời:")
             if answer.is_refused:

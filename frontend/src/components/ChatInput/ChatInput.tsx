@@ -46,7 +46,7 @@ export function ChatInput({ onSend, isLoading }: ChatInputProps) {
           id="chat-input-field"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Nhập câu hỏi về tiểu đường..."
+          placeholder="Hỏi DiaCare"
           disabled={isLoading}
           maxLength={2000}
           autoComplete="off"

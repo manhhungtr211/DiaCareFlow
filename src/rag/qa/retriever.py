@@ -57,7 +57,7 @@ def retrieve(query: Query, top_k: int = 20, score_threshold: float = 0.3) -> Ret
         return RetrievedContext(chunks=initial_chunks[:top_n], query_vector=query_vector)
 
     # 3. Rerank using Jina AI
-    logger.info("Stage 2: Reranking chunks using Jina AI")
+    logger.info(f"Stage 2: Reranking to get {top_n} chunks using Jina AI")
     try:
         url = "https://api.jina.ai/v1/rerank"
         headers = {
@@ -84,7 +84,7 @@ def retrieve(query: Query, top_k: int = 20, score_threshold: float = 0.3) -> Ret
                 source=original_chunk.source,
                 score=res["relevance_score"]
             ))
-            
+        logger.info(f"top k = {top_k}")
         logger.info(f"Stage 2 returning {len(final_chunks)} reranked chunks.")
         return RetrievedContext(chunks=final_chunks, query_vector=query_vector)
 

@@ -54,6 +54,7 @@ Câu trả lời:
         )
         
         response = llm.invoke(prompt)
+        print("LLM RAW RESPONSE:", response)
         answer_text = response.content.strip()
         
         return Answer(

@@ -39,6 +39,10 @@ class AgentState(MessagesState):
     is_safe: bool  # Whether the question passed safety check
     harm_task: SafetyCategory  # Safety classification result
 
+    # --- Supervisor output (UC-010) ---
+    intent: str  # "SMALL_TALK" | "DIABETES" — set by supervisor_node
+    small_talk_reply: str  # Pre-generated reply from supervisor LLM when intent != DIABETES
+
     # --- RAG output ---
     rag_context: list  # List of ChunkResult dicts from retriever
 

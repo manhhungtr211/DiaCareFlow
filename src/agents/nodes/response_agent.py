@@ -1,8 +1,9 @@
 """
 Response Agent node for the LangGraph pipeline.
 
-Wraps src/rag/qa/generator.py to synthesize a final answer from the
-RAG context and writes it to AgentState.
+Handles two paths:
+  - SMALL_TALK: returns the supervisor's pre-generated reply directly (no RAG)
+  - DIABETES: wraps src/rag/qa/generator.py to synthesize an answer from RAG context
 """
 
 from __future__ import annotations
@@ -19,14 +20,37 @@ logger = logging.getLogger(__name__)
 
 def response_agent_node(state: AgentState) -> dict[str, Any]:
     """
-    Response Agent — generates final answer from RAG context.
+    Response Agent — generates final answer.
 
-    Reads: user_input, rag_context
+    For SMALL_TALK: returns pre-generated reply from supervisor (no RAG).
+    For DIABETES: generates answer from RAG context using generator.
+
+    Reads: intent, small_talk_reply, user_input, rag_context
     Writes: suggestion_context, nodes_visited, error
     """
     logger.info("Response Agent: generating final answer")
 
     try:
+        intent = state.get("intent", "DIABETES")
+
+        # --- Small-talk path: bypass RAG, use supervisor's pre-generated reply ---
+        if intent != "DIABETES":
+            small_talk_reply = state.get("small_talk_reply", "")
+            logger.info(
+                f"Response Agent: returning small-talk reply "
+                f"(length={len(small_talk_reply)} chars)"
+            )
+            return {
+                "suggestion_context": {
+                    "final_answer": small_talk_reply,
+                    "sources": [],
+                    "is_refused": False,
+                    "refuse_reason": None,
+                },
+                "nodes_visited": ["response_agent"],
+            }
+
+        # --- Diabetes / RAG path: generate answer from retrieved context ---
         user_input = state.get("user_input", "")
         rag_context_dicts = state.get("rag_context", [])
 

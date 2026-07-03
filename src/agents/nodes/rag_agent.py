@@ -33,7 +33,7 @@ def rag_agent_node(state: AgentState) -> dict[str, Any]:
         query = Query(text=user_input)
 
         # Call existing retriever
-        retrieved = retrieve(query, top_k=3) # cần cài đặt biến này ở config
+        retrieved = retrieve(query) # cần cài đặt biến này ở config
 
         # Convert chunks to serializable dicts for state
         rag_context = [

@@ -3,8 +3,9 @@ LangGraph StateGraph construction and compilation.
 
 Builds the multi-agent pipeline graph with conditional routing:
   START → harm_assessment → supervisor → [conditional]
-    - is_safe=True  → rag_agent → response_agent → END
-    - is_safe=False → END (refusal path)
+    - is_safe=False              → END (refusal path)
+    - intent=SMALL_TALK          → response_agent → END (bypass RAG)
+    - intent=DIABETES (default)  → rag_agent → response_agent → END
 """
 
 from __future__ import annotations
@@ -26,28 +27,36 @@ def _route_after_supervisor(state: AgentState) -> str:
     """
     Conditional routing after Supervisor node.
 
-    If the question was assessed as safe by Harm Assessment,
-    route to RAG Agent. Otherwise, route directly to END
-    (the refusal message is already in state from Harm Assessment).
+    Three-way routing based on safety and intent:
+      - is_safe=False → END (refusal message already in state)
+      - intent=SMALL_TALK → response_agent (bypass RAG)
+      - intent=DIABETES → rag_agent (full RAG pipeline)
     """
     is_safe = state.get("is_safe", True)
 
-    if is_safe:
-        logger.info("Routing: supervisor → rag_agent (SAFE)")
-        return "rag_agent"
-    else:
+    if not is_safe:
         logger.info("Routing: supervisor → END (UNSAFE)")
         return END
+
+    intent = state.get("intent", "DIABETES")
+
+    if intent == "SMALL_TALK":
+        logger.info("Routing: supervisor → response_agent (SMALL_TALK, bypass RAG)")
+        return "response_agent"
+    else:
+        logger.info("Routing: supervisor → rag_agent (DIABETES)")
+        return "rag_agent"
 
 
 def build_graph() -> StateGraph:
     """
     Build and compile the multi-agent StateGraph.
 
-    Graph topology (from data-model.md):
-        START → harm_assessment → supervisor → [is_safe?]
-          Yes → rag_agent → response_agent → END
-          No  → END
+    Graph topology (UC-010 data-model.md):
+        START → harm_assessment → supervisor → [conditional]
+          UNSAFE     → END
+          SMALL_TALK → response_agent → END
+          DIABETES   → rag_agent → response_agent → END
     """
     logger.info("Building LangGraph StateGraph (4-node pipeline)")
 
@@ -63,12 +72,13 @@ def build_graph() -> StateGraph:
     graph.add_edge(START, "harm_assessment")
     graph.add_edge("harm_assessment", "supervisor")
 
-    # Conditional edge after supervisor: safe → rag_agent, unsafe → END
+    # Conditional edge after supervisor: 3-way routing
     graph.add_conditional_edges(
         "supervisor",
         _route_after_supervisor,
         {
             "rag_agent": "rag_agent",
+            "response_agent": "response_agent",
             END: END,
         },
     )

@@ -8,14 +8,11 @@ from src.rag.qa.generator import generate
 
 logger = logging.getLogger(__name__)
 
-def ask(question_text: str, top_k: int = 3) -> Answer:
+def ask(question_text: str) -> Answer:
     """
     Main Q&A pipeline — delegates to LangGraph Multi-Agent pipeline.
-
-    Backward compatible: CLI and evaluation runner import this function
-    without any changes needed.
     """
     logger.info(f"Delegating to LangGraph pipeline: '{question_text}'")
     from src.agents.pipeline import ask_langgraph
-    return ask_langgraph(question_text, top_k=top_k)
+    return ask_langgraph(question_text)
 

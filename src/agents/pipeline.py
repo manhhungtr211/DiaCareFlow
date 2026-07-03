@@ -30,7 +30,7 @@ def _get_graph():
     return _compiled_graph
 
 
-def ask_langgraph(question: str, top_k: int = 3) -> Answer:
+def ask_langgraph(question: str) -> Answer:
     """
     Entry point for the LangGraph Multi-Agent pipeline.
 
