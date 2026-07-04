@@ -38,7 +38,7 @@ def generate(query: Query, context: RetrievedContext, chat_history: list | None 
     if chat_history:
         history_lines = []
         for msg in chat_history:
-            role = "Người dùng" if msg.type == "user" else "assistant"
+            role = "user" if msg.type == "human" else "assistant"
             history_lines.append(f"  {role}: {msg.content}")
         history_text = "\n".join(history_lines)
         

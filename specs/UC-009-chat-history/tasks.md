@@ -66,7 +66,7 @@ Second response must discuss diabetes types — proving the LLM received prior c
 - [x] T012 [US1] Inject `chat_history` into the RAG generation prompt in `src/rag/qa/generator.py` `generate()` — add history as a "Lịch sử hội thoại" section before the current question so the LLM resolves coreferences
 - [x] T013 [US1] Update `response_agent_node` in `src/agents/nodes/response_agent.py` to read `chat_history` from state and pass it to `generate()` as a new parameter
 - [x] T014 [US1] Append `AIMessage` (using name is 'assistant') with the final answer to messages at the end of `ask_langgraph()` in `src/agents/pipeline.py` — ensures bot turn is also stored in MemorySaver for subsequent requests
-
+- [x] T014.1 Add message if small-talk into history
 **Checkpoint**: Run quickstart Scenario 1 — second curl response correctly identifies "bệnh đó" as diabetes.
 
 ---
@@ -113,7 +113,7 @@ Second response must discuss diabetes types — proving the LLM received prior c
 - [x] T020 [P] Generate `sessionId = crypto.randomUUID()` inside `useChat` hook (once, on mount via `useRef` or `useState` initializer) in `frontend/src/hooks/useChat.ts`
 - [x] T021 [P] Update `sendMessage(question, sessionId)` signature in `frontend/src/services/chatService.ts` to include `session_id` in the POST body: `JSON.stringify({ question, session_id: sessionId })`
 - [x] T022 Pass `sessionId` from `useChat` to `sendChatMessage` call in `frontend/src/hooks/useChat.ts`
-
+-
 **Checkpoint**: Run quickstart Scenario 3 — page refresh produces a new UUID and session context is lost as expected.
 
 ---

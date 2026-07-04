@@ -55,11 +55,12 @@ def supervisor_node(state: AgentState) -> dict[str, Any]:
 
         # UC-009: Format chat history for context
         chat_history = state.get("chat_history", [])
+        print(f"chatOriginHistory: {chat_history}")
         history_text = ""
         if chat_history:
             history_lines = []
             for msg in chat_history:
-                role = "Người dùng" if msg.type == "user" else "assistant"
+                role = "user" if msg.type == "human" else "assistant"
                 history_lines.append(f"  {role}: {msg.content}")
             history_text = "\n".join(history_lines)
 

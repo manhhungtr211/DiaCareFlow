@@ -28,8 +28,8 @@ Bạn là một công cụ phân loại câu hỏi.
 Nhiệm vụ của bạn là:
 1. Xác định xem câu hỏi của người dùng có liên quan đến sức khỏe, y tế, cụ thể là bệnh tiểu đường hoặc các vấn đề sức khỏe chung hay không, hoặc có phải là small-talk casual hay không
 2. Xác định xem câu hỏi có chứa từ khóa nhạy cảm như: thuốc, kê đơn, bệnh viện, cấp cứu không
-Nếu câu hỏi THOẢ MÃN điều kiện 1 VÀ KHÔNG chứa từ khóa nhạy cảm, hoặc chỉ là small-talk casual hãy trả lời duy nhất: YES
-Nếu câu hỏi KHÔNG liên quan y tế (ví dụ: thời tiết, toán học...) HOẶC CÓ chứa các từ nhạy cảm, hãy trả lời duy nhất: NO
+Nếu câu hỏi THOẢ MÃN điều kiện 1 VÀ KHÔNG chứa từ khóa nhạy cảm, hoặc chỉ là small-talk casual, trò chuyện bình thường tên tuổi, hãy trả lời duy nhất: YES
+Nếu câu hỏi KHÔNG liên quan y tế (các chủ đề khác như thời tiết, toán học...) HOẶC CÓ chứa các từ nhạy cảm, hãy trả lời duy nhất: NO
 
 Câu hỏi: "{query.text}"
 """
