@@ -16,6 +16,7 @@ const REFUSAL_PATTERNS = [
 
 export interface ChatResponse {
   content: string;
+  session: string;
   isRefused: boolean;
   isError: boolean;
 }
@@ -35,8 +36,12 @@ function detectRefusal(text: string): boolean {
  * @param question - The user's question text
  * @returns ChatResponse with content, refusal flag, and error flag
  */
-export async function sendMessage(question: string): Promise<ChatResponse> {
+export async function sendMessage(question: string, sessionId: string | null = null): Promise<ChatResponse> {
   try {
+    const body: any = { question };
+    if (sessionId) {
+      body.session_id = sessionId;
+    }
     const response = await fetch(`${API_BASE_URL}/chat`, {
       method: 'POST',
       headers: {
@@ -68,6 +73,7 @@ export async function sendMessage(question: string): Promise<ChatResponse> {
     return {
       content,
       isRefused: detectRefusal(content),
+      session: sessionId || null,
       isError: false,
     };
   } catch (error: unknown) {

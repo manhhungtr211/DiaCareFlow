@@ -12,12 +12,14 @@ function generateId(): string {
 export function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [sessionId, setSessionId] = useState(() => crypto.randomUUID());
 
   const sendMessage = useCallback(async (question: string) => {
     // Add user message
     const userMessage: Message = {
       id: generateId(),
       role: 'user',
+      session: sessionId || null,
       content: question,
       isRefused: false,
     };
@@ -26,11 +28,12 @@ export function useChat() {
     setIsLoading(true);
 
     try {
-      const response = await sendChatMessage(question);
+      const response = await sendChatMessage(question, sessionId);
 
       const botMessage: Message = {
         id: generateId(),
         role: response.isError ? 'error' : 'bot',
+        session: response.session,
         content: response.content,
         isRefused: response.isRefused,
       };
@@ -49,7 +52,7 @@ export function useChat() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [sessionId]);
 
   return { messages, isLoading, sendMessage };
 }

@@ -53,3 +53,6 @@ class AgentState(MessagesState):
     messageId: str  # Message identifier for tracking
     nodes_visited: Annotated[list[str], operator.add]  # Accumulate visited node names (chưa biết cần dùng hay ko)
     error: Optional[str]  # Error message if any node fails
+
+    # --- Chat History (UC-009) ---
+    chat_history: list  # Trimmed history for LLM prompt injection (populated by pipeline)

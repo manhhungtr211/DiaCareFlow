@@ -3,16 +3,24 @@ Entry point for the LangGraph Multi-Agent pipeline.
 
 Provides ask_langgraph() which is backward-compatible with the existing
 ask() interface — returns the same Answer dataclass.
+
+UC-009: Supports per-session chat history via MemorySaver checkpointer.
+Pass a session_id to maintain conversation context across requests.
 """
 
 from __future__ import annotations
 
 import logging
 import time
+import uuid
 from typing import Optional
+
+from langchain_core.messages import HumanMessage, AIMessage, trim_messages
+from langchain_groq import ChatGroq
 
 from src.agents.graph import compile_graph
 from src.agents.state import AgentState, SafetyCategory
+from src.config import CHAT_HISTORY_MAX_TOKENS, GENERATIVE_MODEL
 from src.rag.qa.data_models import Answer, ChunkResult
 
 logger = logging.getLogger(__name__)
@@ -30,7 +38,43 @@ def _get_graph():
     return _compiled_graph
 
 
-def ask_langgraph(question: str) -> Answer:
+def _build_chat_history(messages: list) -> list:
+    """
+    Trim the accumulated messages to fit within the configured token limit.
+
+    Uses langchain_core.messages.trim_messages with strategy='last'
+    to keep the most recent turns and discard oldest ones.
+
+    Args:
+        messages: Full list of BaseMessage objects from MemorySaver state.
+
+    Returns:
+        Trimmed list of BaseMessage objects.
+    """
+    if not messages:
+        return []
+
+    original_count = len(messages)
+
+    trimmed = trim_messages(
+        messages,
+        max_tokens=CHAT_HISTORY_MAX_TOKENS,
+        strategy="last",
+        token_counter=ChatGroq(model_name=GENERATIVE_MODEL),
+        include_system=True,
+        allow_partial=False,
+    )
+
+    trimmed_count = len(trimmed)
+    logger.info(
+        f"Chat history trimmed: original_count={original_count}, "
+        f"trimmed_count={trimmed_count}, max_tokens={CHAT_HISTORY_MAX_TOKENS}"
+    )
+
+    return trimmed
+
+
+def ask_langgraph(question: str, session_id: str | None = None) -> Answer:
     """
     Entry point for the LangGraph Multi-Agent pipeline.
 
@@ -39,22 +83,44 @@ def ask_langgraph(question: str) -> Answer:
 
     Args:
         question: The user's question text.
-        top_k: Number of chunks to retrieve (passed through to RAG Agent).
+        session_id: Optional session identifier for chat history.
+                    Auto-generated UUID if None (no cross-request history).
 
     Returns:
         Answer dataclass compatible with the existing pipeline interface.
-    """
-    logger.info(f"ask_langgraph: received question (length={len(question)})")
+    # Auto-generate session_id for backward compat
+    if session_id is None:
+        session_id = str(uuid.uuid4())
+"""    
+    logger.info(
+        f"ask_langgraph: received question (length={len(question)}), "
+        f"session_id={session_id}"
+    )
 
     start_time = time.time()
 
     try:
         graph = _get_graph()
 
+        # UC-009: Build thread config for MemorySaver
+        config = {"configurable": {"thread_id": session_id}}
+
+        # UC-009: Get existing history from MemorySaver via graph state
+        try:
+            existing_state = graph.get_state(config)
+            existing_messages = existing_state.values.get("messages", []) if existing_state.values else []
+        except Exception:
+            existing_messages = []
+
+        # UC-009: Append current user message and trim history
+        current_user_msg = HumanMessage(content=question, name="user")
+        all_messages = list(existing_messages) + [current_user_msg]
+        trimmed_history = _build_chat_history(all_messages)
+
         # Build initial state
         initial_state: dict = {
             "user_input": question,
-            "messages": [],
+            "messages": [current_user_msg],
             "is_safe": True,
             "harm_task": SafetyCategory.SAFE,
             "rag_context": [],
@@ -62,10 +128,11 @@ def ask_langgraph(question: str) -> Answer:
             "messageId": "",
             "nodes_visited": [],
             "error": None,
+            "chat_history": trimmed_history,
         }
 
-        # Invoke the graph
-        final_state = graph.invoke(initial_state)
+        # Invoke the graph with thread config for MemorySaver
+        final_state = graph.invoke(initial_state, config=config)
 
         elapsed_ms = (time.time() - start_time) * 1000
         logger.info(
@@ -74,7 +141,19 @@ def ask_langgraph(question: str) -> Answer:
         )
 
         # Convert final state to Answer
-        return _state_to_answer(final_state)
+        answer = _state_to_answer(final_state)
+
+        # UC-009 / T015: Only persist to history if the message was safe.
+        # If harm_assessment determined it's unsafe, don't add to history
+        # so that unsafe messages don't pollute future context.
+        is_safe = final_state.get("is_safe", True)
+        if is_safe:
+            ai_msg = AIMessage(content=answer.text, name="assistant")
+            graph.update_state(config, {"messages": [ai_msg]})
+        else:
+            logger.info("ask_langgraph: unsafe message — skipping history persistence")
+
+        return answer
 
     except Exception as e:
         elapsed_ms = (time.time() - start_time) * 1000

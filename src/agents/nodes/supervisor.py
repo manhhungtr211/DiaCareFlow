@@ -53,14 +53,25 @@ def supervisor_node(state: AgentState) -> dict[str, Any]:
                 "error": "Vui lòng nhập câu hỏi rõ ràng bằng văn bản.",
             }
 
+        # UC-009: Format chat history for context
+        chat_history = state.get("chat_history", [])
+        history_text = ""
+        if chat_history:
+            history_lines = []
+            for msg in chat_history:
+                role = "Người dùng" if msg.type == "user" else "assistant"
+                history_lines.append(f"  {role}: {msg.content}")
+            history_text = "\n".join(history_lines)
+
         # Classify intent using ChatGroq
+        history_section = f"\nLịch sử hội thoại:\n{history_text}\n" if history_text else ""
         prompt = f"""Phân loại tin nhắn sau thành MỘT trong hai nhãn:
 - SMALL_TALK: chào hỏi, cảm ơn, tạm biệt, trò chuyện thông thường, hỏi về cách thức hoạt động của hệ thống, hoặc các câu hỏi thông thường, không liên quan đến các thông tin y tế
 - DIABETES: câu hỏi hoặc yêu cầu thông tin về bệnh tiểu đường / sức khỏe
 
 Nếu là SMALL_TALK thì trả lời luôn bằng câu trả lời giao tiếp thông thường, không cần thực hiện tìm kiếm vector.
 Nếu không phải thì trả về duy nhất một từ: DIABETES.
-
+{history_section}
 Tin nhắn: "{user_input}"
 """
 

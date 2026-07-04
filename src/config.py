@@ -32,3 +32,6 @@ GENERATIVE_MODEL: str = os.getenv("MODEL")
 
 # --- Jina AI settings ---
 JINA_API_KEY: str = os.getenv("JINA_API_KEY")
+
+# --- Chat History settings (UC-009) ---
+CHAT_HISTORY_MAX_TOKENS: int = int(os.getenv("CHAT_HISTORY_MAX_TOKENS", "4000"))

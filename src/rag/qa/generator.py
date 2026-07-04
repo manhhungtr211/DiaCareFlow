@@ -7,8 +7,15 @@ from src.rag.qa.data_models import Answer, Query, RetrievedContext
 
 logger = logging.getLogger(__name__)
 
-def generate(query: Query, context: RetrievedContext) -> Answer:
-    """Generate an answer using Gemini based on the retrieved context."""
+def generate(query: Query, context: RetrievedContext, chat_history: list | None = None) -> Answer:
+    """
+    Generate an answer using LLM based on the retrieved context.
+
+    Args:
+        query: The user's query.
+        context: Retrieved document chunks from RAG.
+        chat_history: Optional list of BaseMessage objects for conversational context (UC-009).
+    """
     
     if not context.chunks:
         logger.info("No context chunks provided to generator.")
@@ -25,6 +32,25 @@ def generate(query: Query, context: RetrievedContext) -> Answer:
     print("KẾT QUẢ RETRIEVED TỪ VECTOR DB:")
     print(context_text)
     print("="*50 + "\n")
+
+    # UC-009: Format chat history for conversational context
+    history_section = ""
+    if chat_history:
+        history_lines = []
+        for msg in chat_history:
+            role = "Người dùng" if msg.type == "user" else "assistant"
+            history_lines.append(f"  {role}: {msg.content}")
+        history_text = "\n".join(history_lines)
+        
+        print("\n" + "="*50)
+        print("LỊCH SỬ HỘI THOẠI (CHAT HISTORY):")
+        print(history_text)
+        print("="*50 + "\n")
+
+        history_section = f"""
+Lịch sử hội thoại:
+{history_text}
+"""
     
     # 2. Build prompt
     prompt = f"""
@@ -34,8 +60,8 @@ QUY TẮC QUAN TRỌNG:
 1. CHỈ sử dụng thông tin có trong phần Tài liệu cung cấp. Không tự bịa đặt hoặc dùng kiến thức bên ngoài.
 2. Nếu Tài liệu không chứa thông tin để trả lời câu hỏi, hãy nói rõ: "Tôi không tìm thấy thông tin về chủ đề này trong tài liệu hiện có."
 3. Trả lời bằng ngôn ngữ phổ thông, dễ hiểu, rõ ràng.
-4. 
-
+4. Sử dụng lịch sử hội thoại (nếu có) để hiểu ngữ cảnh của câu hỏi hiện tại (ví dụ: đại từ "đó", "nó" ám chỉ điều gì).
+{history_section}
 Tài liệu cung cấp:
 {context_text}
 

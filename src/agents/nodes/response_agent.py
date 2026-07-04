@@ -53,6 +53,7 @@ def response_agent_node(state: AgentState) -> dict[str, Any]:
         # --- Diabetes / RAG path: generate answer from retrieved context ---
         user_input = state.get("user_input", "")
         rag_context_dicts = state.get("rag_context", [])
+        chat_history = state.get("chat_history", [])  # UC-009
 
         # Reconstruct ChunkResult objects from state dicts
         chunks = [
@@ -68,8 +69,8 @@ def response_agent_node(state: AgentState) -> dict[str, Any]:
         query = Query(text=user_input)
         context = RetrievedContext(chunks=chunks, query_vector=[])
 
-        # Call existing generator
-        answer = generate(query, context)
+        # Call existing generator with chat history (UC-009)
+        answer = generate(query, context, chat_history=chat_history)
 
         logger.info(
             f"Response Agent: generated answer "

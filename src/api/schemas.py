@@ -20,6 +20,11 @@ class ChatRequest(BaseModel):
         max_length=2000,
         description="The user's question. Must not be empty and must be <= 2000 characters.",
     )
+    session_id: str | None = Field(
+        default=None,
+        description="Session identifier (UUID) for chat history. "
+        "Auto-generated if omitted (no history for that request).",
+    )
 
 
 class SourceItem(BaseModel):

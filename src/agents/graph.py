@@ -6,6 +6,10 @@ Builds the multi-agent pipeline graph with conditional routing:
     - is_safe=False              → END (refusal path)
     - intent=SMALL_TALK          → response_agent → END (bypass RAG)
     - intent=DIABETES (default)  → rag_agent → response_agent → END
+
+UC-009: Graph is compiled with MemorySaver checkpointer for per-session
+chat history persistence. Pass config={"configurable": {"thread_id": ...}}
+when invoking the compiled graph.
 """
 
 from __future__ import annotations
@@ -13,6 +17,7 @@ from __future__ import annotations
 import logging
 
 from langgraph.graph import StateGraph, START, END
+from langgraph.checkpoint.memory import MemorySaver
 
 from src.agents.state import AgentState
 from src.agents.nodes.harm_assessment import harm_assessment_node
@@ -91,7 +96,15 @@ def build_graph() -> StateGraph:
     return graph
 
 
-def compile_graph():
-    """Build and compile the graph, returning a runnable."""
+def compile_graph(checkpointer=None):
+    """
+    Build and compile the graph, returning a runnable.
+
+    Args:
+        checkpointer: Optional checkpointer for state persistence.
+                      Defaults to MemorySaver for in-memory session history.
+    """
+    if checkpointer is None:
+        checkpointer = MemorySaver()
     graph = build_graph()
-    return graph.compile()
+    return graph.compile(checkpointer=checkpointer)

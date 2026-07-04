@@ -35,7 +35,7 @@ async def chat(request: ChatRequest):
     start_time = time.time()
 
     # Invoke the LangGraph pipeline (synchronous call)
-    answer = ask_langgraph(request.question)
+    answer = ask_langgraph(request.question, session_id=request.session_id)
 
     elapsed_ms = round((time.time() - start_time) * 1000)
 
