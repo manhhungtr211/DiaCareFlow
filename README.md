@@ -32,3 +32,82 @@
 
 ---
 
+## Web Search Tool (UC-011)
+
+Standalone web search-and-scrape pipeline in `src/tools/web/`. Queries SearXNG,
+applies a composite ranking algorithm, scrapes top-3 URLs with Crawl4ai, and returns
+aggregated markdown content.
+
+### Setup SearXNG (Docker)
+
+SearXNG disables JSON output by default. We have provided a configuration file to enable it.
+
+```bash
+# Pull and start SearXNG with the provided settings
+docker run -d --name searxng -p 8080:8080 -v ${PWD}/docker/searxng:/etc/searxng searxng/searxng:latest
+
+# Verify (should return a JSON response, not 403)
+curl "http://localhost:8080/search?q=diabetes&format=json"
+```
+
+### Install Dependencies
+
+```bash
+pip install crawl4ai pyyaml
+
+# One-time Playwright browser setup (required by Crawl4ai)
+playwright install chromium
+```
+
+### Configure Environment
+
+Add to `.env`:
+```env
+XNG_SEARCH_URL=http://localhost:8080
+XNG_MAX_RESULTS=5
+SCRAPE_TIMEOUT=10
+```
+
+### Usage
+
+```python
+import asyncio
+from src.tools.web import web_search
+
+async def main():
+    resp = await web_search("bệnh tiểu đường type 2")
+    print(f"Found: {resp.found}")
+    print(f"Combined text ({len(resp.combined_text)} chars):\n{resp.combined_text[:500]}")
+
+asyncio.run(main())
+```
+
+### Run Tests
+
+```bash
+# Unit tests (no network required)
+pytest tests/unit/tools/web/ -v
+
+# Integration tests (requires SearXNG Docker)
+pytest tests/integration/test_web_search_integration.py -v -m integration
+```
+
+### Module Structure
+
+```
+src/tools/web/
+├── __init__.py              # Exposes web_search() public API
+├── _api.py                  # Pipeline orchestrator
+├── models.py                # Pydantic data models
+├── exceptions.py            # SearchError, ScrapeError
+├── search/
+│   └── xng_search.py        # SearXNG async HTTP client
+├── scraper/
+│   └── crawl4ai_scraper.py  # Crawl4ai parallel scraper
+├── ranking/
+│   ├── scorer.py            # Composite ranking algorithm
+│   └── jina_reranker.py     # Jina AI reranker (optional)
+└── config/
+    ├── __init__.py          # TrustedDomainRegistry singleton
+    └── trusted_domains.yaml # Medical domain whitelist
+```

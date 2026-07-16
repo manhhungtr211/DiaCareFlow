@@ -35,3 +35,8 @@ JINA_API_KEY: str = os.getenv("JINA_API_KEY")
 
 # --- Chat History settings (UC-009) ---
 CHAT_HISTORY_MAX_TOKENS: int = int(os.getenv("CHAT_HISTORY_MAX_TOKENS", "4000"))
+
+# --- XNG Search settings (UC-011) ---
+XNG_SEARCH_URL: str = os.getenv("XNG_SEARCH_URL", "http://localhost:8080")
+XNG_MAX_RESULTS: int = int(os.getenv("XNG_MAX_RESULTS", "5"))
+SCRAPE_TIMEOUT: int = int(os.getenv("SCRAPE_TIMEOUT", "10"))

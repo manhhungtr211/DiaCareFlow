@@ -18,11 +18,11 @@
 
 **Purpose**: Tạo cấu trúc thư mục, cài dependency, cấu hình môi trường
 
-- [ ] T001 Tạo cấu trúc thư mục `src/tools/web/` với các sub-package: `search/`, `scraper/`, `ranking/`, `config/` — mỗi folder cần file `__init__.py`
-- [ ] T002 Thêm `crawl4ai>=0.4.0` và `pyyaml>=6.0.0` vào `requirements.txt`
-- [ ] T003 [P] Chạy `playwright install chromium` để setup Crawl4ai browser (một lần, ghi vào README)
-- [ ] T004 [P] Thêm env vars `XNG_SEARCH_URL`, `XNG_MAX_RESULTS`, `SCRAPE_TIMEOUT` vào `.env.example`
-- [ ] T005 [P] Cập nhật `src/config.py` — thêm `XNG_SEARCH_URL`, `XNG_MAX_RESULTS`, `SCRAPE_TIMEOUT` constants
+- [X] T001 Tạo cấu trúc thư mục `src/tools/web/` với các sub-package: `search/`, `scraper/`, `ranking/`, `config/` — mỗi folder cần file `__init__.py`
+- [X] T002 Thêm `crawl4ai>=0.4.0` và `pyyaml>=6.0.0` vào `requirements.txt`
+- [X] T003 [P] Chạy `playwright install chromium` để setup Crawl4ai browser (một lần, ghi vào README)
+- [X] T004 [P] Thêm env vars `XNG_SEARCH_URL`, `XNG_MAX_RESULTS`, `SCRAPE_TIMEOUT` vào `.env.example`
+- [X] T005 [P] Cập nhật `src/config.py` — thêm `XNG_SEARCH_URL`, `XNG_MAX_RESULTS`, `SCRAPE_TIMEOUT` constants
 
 ---
 
@@ -32,10 +32,10 @@
 
 **⚠️ CRITICAL**: Không có user story nào có thể bắt đầu trước khi phase này xong
 
-- [ ] T006 Tạo tất cả Pydantic models trong `src/tools/web/models.py`: `SearchQuery`, `SearchResult`, `ScoredURL`, `ScrapedContent`, `WebSearchResponse`, `RankingConfig` — theo đúng data-model.md
-- [ ] T007 [P] Định nghĩa custom exceptions `SearchError` và `ScrapeError` trong `src/tools/web/exceptions.py`
-- [ ] T008 [P] Tạo file trusted domains `src/tools/web/config/trusted_domains.yaml` với danh sách 10 domains y khoa từ data-model.md
-- [ ] T009 Implement `TrustedDomainRegistry` singleton trong `src/tools/web/config/__init__.py` — load YAML một lần, expose `is_trusted(hostname: str) -> bool`
+- [X] T006 Tạo tất cả Pydantic models trong `src/tools/web/models.py`theo đúng data-model.md
+- [X] T007 [P] Định nghĩa custom exceptions `SearchError` và `ScrapeError` trong `src/tools/web/exceptions.py`
+- [X] T008 [P] Tạo file trusted domains `src/tools/web/config/trusted_domains.yaml` với danh sách 10 domains y khoa từ data-model.md
+- [X] T009 Implement `TrustedDomainRegistry` singleton trong `src/tools/web/config/__init__.py` — load YAML một lần, expose `is_trusted(hostname: str) -> bool`
 
 **Checkpoint**: Models, exceptions, trusted domain config đã sẵn sàng — có thể bắt đầu implement user stories
 
@@ -59,13 +59,13 @@ assert len(results) > 0
 
 ### Implementation for US1
 
-- [ ] T010 [US1] Implement `search_xng()` async function trong `src/tools/web/search/xng_search.py`:
+- [X] T010 [US1] Implement `search_xng()` async function trong `src/tools/web/search/xng_search.py`:
   - Gọi `GET {XNG_SEARCH_URL}/search?q={query}&format=json`
-  - Parse response JSON → `list[SearchResult]`
+  - Parse response JSON → `list[SearchResult]`, ko lấy hình ảnh, chỉ lấy text
   - Map fields: `url`, `title`, `content`, `score→weight`, `publishedDate`, `engine`
   - Raise `SearchError` khi HTTP 5xx hoặc connection error
   - Return `[]` khi response 200 nhưng `results` rỗng (AC-4)
-- [ ] T011 [US1] Viết unit test `tests/unit/tools/web/test_xng_search.py`:
+- [X] T011 [US1] Viết unit test `tests/unit/tools/web/test_xng_search.py`:
   - Mock `httpx.AsyncClient.get` — test happy path parse
   - Test khi response trả về `results: []` → return `[]`
   - Test khi HTTP 500 → raise `SearchError`
@@ -96,23 +96,24 @@ print('AC-2 OK:', scored[0].final_score, '>', scored[1].final_score)
 
 ### Implementation for US2
 
-- [ ] T012 [P] [US2] Implement `compute_hostname_boost(url: str, config: RankingConfig) -> float` trong `src/tools/web/ranking/scorer.py`:
+- [X] T012 [P] [US2] Implement `compute_hostname_boost(url: str, config: RankingConfig) -> float` trong `src/tools/web/ranking/scorer.py`:
   - Dùng `TrustedDomainRegistry.is_trusted()` để check hostname
-  - Trusted: `1.0 * config.trusted_multiplier * config.host_name_weight`
-  - Non-trusted: `1.0 * 1.0 * config.host_name_weight`
-- [ ] T013 [P] [US2] Implement `compute_path_boost(url: str, config: RankingConfig) -> float` trong `src/tools/web/ranking/scorer.py`:
+  - Dùng regex lấy host_name, đếm và tính host_name freq
+  - Trusted: `host_name freq * config.trusted_multiplier (config = 2) * config.host_name_weight`
+  - Non-trusted: `host_name freq * 1.0 * config.host_name_weight`
+- [X] T013 [P] [US2] Implement `compute_path_boost(url: str, config: RankingConfig) -> float` trong `src/tools/web/ranking/scorer.py`:
   - Parse URL path bằng `urllib.parse.urlparse`
   - Tách path thành segments, tính `sum(1 * decay^(i) for i, seg in enumerate(segments))`
   - Nhân với `config.path_boost_weight`
-  - AC-3: depth 1 → `decay^0 = 1.0`, depth 2 → `decay^1 = 0.8`
-- [ ] T014 [P] [US2] Implement `compute_freq_boost(weight: float, config: RankingConfig) -> float` trong `src/tools/web/ranking/scorer.py`:
+  - AC-3: depth 1 → `decay^0 = 1.0`, depth 2 → `decay^1 = 0.8`, depth 2 → `decay^2 = 0.8^2`
+- [X] T014 [P] [US2] Implement `compute_freq_boost(weight: float, config: RankingConfig) -> float` trong `src/tools/web/ranking/scorer.py`:
   - `return weight * config.freq_weight`
-- [ ] T015 [US2] Implement hàm `rank_urls(results, config) -> list[ScoredURL]` trong `src/tools/web/ranking/scorer.py` (depends on T012–T014):
+- [X] T015 [US2] Implement hàm `rank_urls(results, config) -> list[ScoredURL]` trong `src/tools/web/ranking/scorer.py` (depends on T012–T014):
   - Với mỗi `SearchResult`, tạo `ScoredURL` với đủ 4 boost fields
   - `raw = hostname_boost + path_boost + freq_boost + jina_rerank_boost`
   - `final_score = clamp(raw, config.score_min, config.score_max)`
   - Sort giảm dần theo `final_score`, return list
-- [ ] T016 [US2] Viết unit test `tests/unit/tools/web/test_scorer.py` (no network):
+- [X] T016 [US2] Viết unit test `tests/unit/tools/web/test_scorer.py` (no network):
   - Test AC-2: trusted domain → `hostname_boost` gấp đôi so với non-trusted
   - Test AC-3: `path_boost` depth 1 > depth 2
   - Test clamp: `final_score` không vượt quá 5.0
@@ -140,15 +141,16 @@ print('Graceful degrade OK')
 
 ### Implementation for US3
 
-- [ ] T017 [US3] Implement `compute_jina_boost(url: str, api_key: str | None) -> float` trong `src/tools/web/ranking/jina_reranker.py`:
+- [X] T017 [US3] Implement `compute_jina_boost(url: str, api_key: str | None) -> float` trong `src/tools/web/ranking/jina_reranker.py`:
   - Nếu `api_key` là `None` hoặc rỗng → return `0.0` (graceful degrade)
-  - Gọi Jina Reader API: `GET https://r.jina.ai/{url}` với header `Authorization: Bearer {api_key}`
+  - Lấy title + content và XNG trả về, + lại thành content chung, gửi lên jina để đánh giá relevance giữa query và content
+  - Gọi Jina Rerank API: `POST https://api.jina.ai/v1/rerank` với header `Authorization: Bearer {api_key}, json với model là: jina-reranker-v2-base-multilingual`
   - Parse response score, return `score * config.jina_weight`
   - Bọc trong try/except: mọi lỗi HTTP/network → log warning, return `0.0`
-- [ ] T018 [US3] Cập nhật `rank_urls()` trong `src/tools/web/ranking/scorer.py` để inject `jina_rerank_boost`:
+- [X] T018 [US3] Cập nhật `rank_urls()` trong `src/tools/web/ranking/scorer.py` để inject `jina_rerank_boost`:
   - Gọi `compute_jina_boost()` per URL (có thể batch nếu Jina hỗ trợ)
   - Đưa kết quả vào `ScoredURL.jina_rerank_boost`
-- [ ] T019 [US3] Viết unit test `tests/unit/tools/web/test_jina_reranker.py`:
+- [X] T019 [US3] Viết unit test `tests/unit/tools/web/test_jina_reranker.py`:
   - Mock `httpx.AsyncClient.get` — test score parse
   - Test `api_key=None` → return `0.0`
   - Test exception handling → return `0.0` (không raise)
@@ -182,15 +184,12 @@ asyncio.run(run())
 
 ### Implementation for US4
 
-- [ ] T020 [US4] Implement `scrape_single_url(url: str, timeout: int) -> ScrapedContent` trong `src/tools/web/scraper/crawl4ai_scraper.py`:
+- [X] T020 [US4] Implement `scrape_urls(urls: List[str], timeout: int) -> ScrapedContent` trong `src/tools/web/scraper/crawl4ai_scraper.py`:
   - Dùng `AsyncWebCrawler(verbose=False)` context manager
-  - Gọi `crawler.arun(url=url)`
-  - Thành công: return `ScrapedContent(url=url, markdown=result.markdown, success=True)`
-  - Exception bất kỳ: return `ScrapedContent(url=url, markdown="", success=False, error=str(e))` + log warning (AC-5)
-- [ ] T021 [US4] Implement `scrape_urls(urls: list[str], timeout: int = 10) -> list[ScrapedContent]` trong `src/tools/web/scraper/crawl4ai_scraper.py`:
-  - Dùng `asyncio.gather(*[scrape_single_url(url, timeout) for url in urls])`
-  - Return list giữ nguyên thứ tự input
-- [ ] T022 [US4] Viết unit test `tests/unit/tools/web/test_crawl4ai_scraper.py`:
+  - Gọi `crawler.arun_many(urls=urls)`
+  - Thành công: return `ScrapedContent(urls=urls, markdown=result.markdown, success=True)`
+  - Exception bất kỳ: return `ScrapedContent(urls=url, markdown="", success=False, error=str(e))` + log warning (AC-5)
+- [X] T022 [US4] Viết unit test `tests/unit/tools/web/test_crawl4ai_scraper.py`:
   - Mock `AsyncWebCrawler` — test happy path
   - Test AC-5: 1 URL raise exception → `ScrapedContent(success=False)`, không raise, 2 URL còn lại vẫn return
 
@@ -230,7 +229,7 @@ asyncio.run(run())
 
 ### Implementation for US5
 
-- [ ] T023 [US5] Implement `web_search(query: str) -> WebSearchResponse` trong `src/tools/web/__init__.py`:
+- [X] T023 [US5] Implement `web_search(query: str) -> WebSearchResponse` trong `src/tools/web/__init__.py`:
   - Step 1: `results = await search_xng(query, max_results=XNG_MAX_RESULTS)`
   - Step 2: Nếu `results` rỗng → return `WebSearchResponse(query=query, result=[], scored_result=[], ..., found=False)` (AC-4)
   - Step 3: `scored = rank_urls(results, RankingConfig())`
@@ -238,8 +237,8 @@ asyncio.run(run())
   - Step 5: `scraped = await scrape_urls([s.url for s in top3], timeout=SCRAPE_TIMEOUT)`
   - Step 6: `combined_text = "\n\n".join(c.markdown for c in scraped if c.success and c.markdown)`
   - Step 7: Return `WebSearchResponse(query=query, result=results, scored_result=top3, scraped_contents=scraped, combined_text=combined_text, found=True)`
-- [ ] T024 [US5] Thêm logging tại mỗi bước trong `web_search()` (query, num results, top URLs, scrape success count)
-- [ ] T025 [US5] Viết unit test `tests/unit/tools/web/test_web_search_pipeline.py` với full mock:
+- [X] T024 [US5] Thêm logging tại mỗi bước trong `web_search()` (query, num results, top URLs, scrape success count)
+- [X] T025 [US5] Viết unit test `tests/unit/tools/web/test_web_search_pipeline.py` với full mock:
   - Test AC-1 happy path (3 scraped)
   - Test AC-4: `search_xng` returns `[]` → `found=False`, no rank/scrape called
   - Test AC-5: 1 scrape fails → `found=True`, `combined_text` từ 2 URL còn lại
@@ -252,10 +251,10 @@ asyncio.run(run())
 
 **Purpose**: Integration test, docs, và validate toàn bộ quickstart scenarios
 
-- [ ] T026 [P] Viết integration test `tests/integration/test_web_search_integration.py` — chỉ chạy khi SearXNG Docker available (dùng `pytest.mark.integration`)
-- [ ] T027 [P] Cập nhật `README.md` — thêm section "Web Search Tool" với hướng dẫn setup SearXNG Docker
-- [ ] T028 Chạy toàn bộ quickstart scenarios từ `specs/UC-011-xng-search/quickstart.md` và xác nhận pass
-- [ ] T029 [P] Cập nhật `src/tools/web/config/trusted_domains.yaml` — review và bổ sung thêm domain y tế Việt Nam nếu cần
+- [X] T026 [P] Viết integration test `tests/integration/test_web_search_integration.py` — chỉ chạy khi SearXNG Docker available (dùng `pytest.mark.integration`)
+- [X] T027 [P] Cập nhật `README.md` — thêm section "Web Search Tool" với hướng dẫn setup SearXNG Docker
+- [X] T028 Chạy toàn bộ quickstart scenarios từ `specs/UC-011-xng-search/quickstart.md` và xác nhận pass
+- [X] T029 [P] Cập nhật `src/tools/web/config/trusted_domains.yaml` — review và bổ sung thêm domain y tế Việt Nam nếu cần
 
 ---
 
@@ -341,3 +340,4 @@ Track D (US5 — Orchestrator): T023 → T024 → T025
 - `jina_rerank_boost` gracefully defaults to `0.0` khi Jina API không available
 - Tất cả network calls phải có timeout để không block vô hạn
 - Commit sau mỗi phase checkpoint
+- Config thông số cho chức năng thì phải config ở file riêng,ko config chung, mỗi file chỉ thực hiện đúng chức năng

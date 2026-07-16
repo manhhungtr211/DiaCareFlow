@@ -1,0 +1,18 @@
+# Trusted medical / scientific domains for UC-011 XNG Search ranking.
+# Each entry is matched against the full hostname and all parent domains.
+# See TrustedDomainRegistry in src/tools/web/config/__init__.py.
+
+trusted_domains:
+  # International medical authorities
+  - diabetes.org          # American Diabetes Association
+  - who.int               # World Health Organization
+  - ncbi.nlm.nih.gov      # US National Center for Biotechnology Information
+  - pubmed.ncbi.nlm.nih.gov
+  - mayoclinic.org
+  - healthline.com
+  - webmd.com
+
+  # Vietnamese medical authorities & portals
+  - vndiabetes.org        # Hội Nội tiết – Đái tháo đường Việt Nam
+  - suckhoedoisong.vn     # Báo Sức khoẻ & Đời sống (Bộ Y tế)
+  - vinmec.com            # Bệnh viện Đa khoa Quốc tế Vinmec
