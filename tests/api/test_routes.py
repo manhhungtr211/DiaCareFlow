@@ -13,7 +13,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.api.main import app
-from src.rag.qa.data_models import Answer, ChunkResult
+from src.tools.rag.qa.data_models import Answer, ChunkResult
 
 client = TestClient(app)
 

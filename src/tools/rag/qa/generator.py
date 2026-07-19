@@ -3,7 +3,7 @@ import logging
 from langchain_groq import ChatGroq
 
 from src.config import GENERATIVE_MODEL
-from src.rag.qa.data_models import Answer, Query, RetrievedContext
+from src.tools.rag.qa.data_models import Answer, Query, RetrievedContext
 
 logger = logging.getLogger(__name__)
 

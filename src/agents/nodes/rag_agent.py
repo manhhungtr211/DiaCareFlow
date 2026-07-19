@@ -11,8 +11,8 @@ import logging
 from typing import Any
 
 from src.agents.state import AgentState
-from src.rag.qa.data_models import Query, ChunkResult
-from src.rag.qa.retriever import retrieve
+from src.tools.rag.qa.data_models import Query, ChunkResult
+from src.tools.rag.qa.retriever import retrieve
 
 logger = logging.getLogger(__name__)
 

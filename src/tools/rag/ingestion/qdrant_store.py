@@ -17,7 +17,7 @@ from qdrant_client.models import Distance, PointStruct, VectorParams
 from src.config import COLLECTION_NAME, QDRANT_URL, VECTOR_SIZE
 
 if TYPE_CHECKING:
-    from src.rag.ingestion.data_models import EmbeddedChunk
+    from src.tools.rag.ingestion.data_models import EmbeddedChunk
 
 logger = logging.getLogger(__name__)
 

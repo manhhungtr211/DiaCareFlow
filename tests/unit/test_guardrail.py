@@ -1,6 +1,6 @@
 import pytest
-from src.rag.qa.data_models import Query
-from src.rag.qa.guardrail import check_guardrail
+from src.tools.rag.qa.data_models import Query
+from src.tools.rag.qa.guardrail import check_guardrail
 
 def test_guardrail_empty_query():
     # Will fail until implemented

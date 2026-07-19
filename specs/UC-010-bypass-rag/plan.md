@@ -44,7 +44,7 @@ Harm Assessment continues to block dangerous queries (prescription, diagnosis, e
 - ✅ **Single Responsibility**: Harm Assessment = safety gate (unchanged). Supervisor = intent router (new role, narrow scope).
 - ✅ **Minimal state change**: One new `intent: str` field added to `AgentState`. No new nodes, no new edges in the graph beyond updating the conditional routing map.
 - ✅ **No new dependencies**: Uses the existing `ChatGroq` + `GENERATIVE_MODEL` configuration.
-- ✅ **Backward compatibility**: `harm_assessment_node`, `guardrail.py`, `rag_agent_node`, and `data_models.py` are **not modified**.
+- ✅ **Backward compatibility**: `triage_agent_node (chứa logic check_guardrail).py`, `rag_agent_node`, and `data_models.py` are **not modified**.
 
 ---
 

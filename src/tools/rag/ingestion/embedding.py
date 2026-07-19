@@ -8,7 +8,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from FlagEmbedding import BGEM3FlagModel
 
 from src.config import EMBEDDING_MODEL
-from src.rag.ingestion.data_models import DocumentChunk, EmbeddedChunk
+from src.tools.rag.ingestion.data_models import DocumentChunk, EmbeddedChunk
 
 logger = logging.getLogger(__name__)
 

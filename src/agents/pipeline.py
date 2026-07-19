@@ -21,7 +21,7 @@ from langchain_groq import ChatGroq
 from src.agents.graph import compile_graph
 from src.agents.state import AgentState, SafetyCategory
 from src.config import CHAT_HISTORY_MAX_TOKENS, GENERATIVE_MODEL
-from src.rag.qa.data_models import Answer, ChunkResult
+from src.tools.rag.qa.data_models import Answer, ChunkResult
 
 logger = logging.getLogger(__name__)
 
@@ -117,17 +117,24 @@ def ask_langgraph(question: str, session_id: str | None = None) -> Answer:
         all_messages = list(existing_messages) + [current_user_msg]
         trimmed_history = _build_chat_history(all_messages)
 
-        # Build initial state
+        # Build initial state (UC-012: removed rag_context; added fan-in fields)
         initial_state: dict = {
             "user_input": question,
             "messages": [current_user_msg],
             "is_safe": True,
             "harm_task": SafetyCategory.SAFE,
-            "rag_context": [],
+            "intent": "DIABETES",
+            "small_talk_reply": "",
+            "factor_question": "",
+            "suggestion_question": "",
+            "harm_question": "",
+            "factor_results": [],
+            "suggestion_results": [],
+            "harm_sub_results": [],
+            "errors": [],
             "suggestion_context": {},
             "messageId": "",
             "nodes_visited": [],
-            "error": None,
             "chat_history": trimmed_history,
         }
 
@@ -144,7 +151,7 @@ def ask_langgraph(question: str, session_id: str | None = None) -> Answer:
         answer = _state_to_answer(final_state)
 
         # UC-009 / T015: Only persist to history if the message was safe.
-        # If harm_assessment determined it's unsafe, don't add to history
+        # If triage_agent determined it's unsafe, don't add to history
         # so that unsafe messages don't pollute future context.
         is_safe = final_state.get("is_safe", True)
         if is_safe:
@@ -177,12 +184,13 @@ def _state_to_answer(state: dict) -> Answer:
     """
     is_safe = state.get("is_safe", True)
     suggestion = state.get("suggestion_context", {})
-    error = state.get("error")
+    errors = state.get("errors", [])  # UC-012: errors is now a list (was singular 'error')
 
-    # Error path — node encountered an error
-    if error and not suggestion:
+    # Error path — node encountered an error with no usable suggestion_context
+    if errors and not suggestion:
+        error_text = "; ".join(errors)
         return Answer(
-            text=f"Đã xảy ra lỗi: {error}",
+            text=f"Đã xảy ra lỗi: {error_text}",
             sources=[],
             is_refused=False,
         )

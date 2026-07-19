@@ -11,8 +11,11 @@ trusted_domains:
   - mayoclinic.org
   - healthline.com
   - webmd.com
-
+  - msdmanuals.com        
   # Vietnamese medical authorities & portals
   - vndiabetes.org        # Hội Nội tiết – Đái tháo đường Việt Nam
   - suckhoedoisong.vn     # Báo Sức khoẻ & Đời sống (Bộ Y tế)
   - vinmec.com            # Bệnh viện Đa khoa Quốc tế Vinmec
+  - dieutri.vn            # Cổng thông tin Y Dược Việt Nam
+  - alobacsi.com          # Cổng thông tin Y Dược Việt Nam
+  - medlatec.vn           # Cổng thông tin Y Dược Việt Nam

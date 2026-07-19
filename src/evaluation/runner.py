@@ -1,7 +1,7 @@
 import json
 import logging
 from typing import List
-from src.rag.qa.pipeline import ask
+from src.tools.rag.qa.pipeline import ask
 from src.evaluation.data_models import TestCase, TestResult, TestReport, ContextSnippet
 
 logger = logging.getLogger(__name__)

@@ -5,7 +5,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from qdrant_client import QdrantClient
 
 from src.config import QDRANT_URL, COLLECTION_NAME, JINA_API_KEY
-from src.rag.qa.data_models import ChunkResult, Query, RetrievedContext
+from src.tools.rag.qa.data_models import ChunkResult, Query, RetrievedContext
 
 logger = logging.getLogger(__name__)
 

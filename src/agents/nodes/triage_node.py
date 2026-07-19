@@ -12,8 +12,8 @@ import logging
 from typing import Any
 
 from src.agents.state import AgentState, SafetyCategory
-from src.rag.qa.data_models import Query, GuardrailResult
-from src.rag.qa.guardrail import check_guardrail
+from src.tools.rag.qa.data_models import Query, GuardrailResult
+from src.tools.rag.qa.guardrail import check_guardrail
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ REFUSAL_MESSAGES: dict[SafetyCategory, str] = {
 }
 
 
-def harm_assessment_node(state: AgentState) -> dict[str, Any]:
+def triage_agent_node(state: AgentState) -> dict[str, Any]:
     """
     Evaluate question safety using the existing guardrail module.
 
@@ -56,7 +56,7 @@ def harm_assessment_node(state: AgentState) -> dict[str, Any]:
                 "suggestion_context": {
                     "refusal_message": "Câu hỏi không hợp lệ. Vui lòng nhập câu hỏi rõ ràng."
                 },
-                "nodes_visited": ["harm_assessment"],
+                "nodes_visited": ["triage_agent"],
                 "error": "Empty input",
             }
 
@@ -69,7 +69,7 @@ def harm_assessment_node(state: AgentState) -> dict[str, Any]:
                 "suggestion_context": {
                     "refusal_message": "Vui lòng nhập câu hỏi rõ ràng bằng văn bản."
                 },
-                "nodes_visited": ["harm_assessment"],
+                "nodes_visited": ["triage_agent"],
                 "error": "Special characters only",
             }
 
@@ -84,7 +84,7 @@ def harm_assessment_node(state: AgentState) -> dict[str, Any]:
             return {
                 "is_safe": True,
                 "harm_task": SafetyCategory.SAFE,
-                "nodes_visited": ["harm_assessment"],
+                "nodes_visited": ["triage_agent"],
             }
         else:
             # Classify the type of harm from guardrail reason
@@ -96,7 +96,7 @@ def harm_assessment_node(state: AgentState) -> dict[str, Any]:
                 "is_safe": False,
                 "harm_task": category,
                 "suggestion_context": {"refusal_message": refusal_msg},
-                "nodes_visited": ["harm_assessment"],
+                "nodes_visited": ["triage_agent"],
             }
 
     except Exception as e:
@@ -106,7 +106,7 @@ def harm_assessment_node(state: AgentState) -> dict[str, Any]:
         return {
             "is_safe": True,
             "harm_task": SafetyCategory.SAFE,
-            "nodes_visited": ["harm_assessment"],
+            "nodes_visited": ["triage_agent"],
             "error": f"Harm Assessment error: {str(e)}",
         }
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 import logging
 from langchain_groq import ChatGroq
 from src.config import GENERATIVE_MODEL
-from src.rag.qa.data_models import GuardrailResult, Query
+from src.tools.rag.qa.data_models import GuardrailResult, Query
 
 logger = logging.getLogger(__name__)
 

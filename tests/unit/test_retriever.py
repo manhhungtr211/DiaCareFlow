@@ -4,7 +4,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 from langchain_huggingface import HuggingFaceEmbeddings
 from qdrant_client import QdrantClient
 import pytest
-from src.rag.qa.data_models import Query
+from src.tools.rag.qa.data_models import Query
 
 import logging
 
