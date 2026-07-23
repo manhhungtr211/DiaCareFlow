@@ -111,3 +111,68 @@ src/tools/web/
     ├── __init__.py          # TrustedDomainRegistry singleton
     └── trusted_domains.yaml # Medical domain whitelist
 ```
+
+---
+
+## Pipeline Tracking (BR-004)
+
+DiaCareFlow automatically instruments every LangGraph node execution, LLM call, and tool call via a custom `DiaCareFlowCallbackHandler`. All events are emitted as structured **JSON lines** to both stdout and `logs/tracking.jsonl`.
+
+### What is tracked
+
+| Event Type   | Triggered when                               |
+|--------------|----------------------------------------------|
+| `chain_end`  | A LangGraph node finishes (e.g. `triage_agent`, `supervisor`) |
+| `chain_error`| A node raises an exception                   |
+| `llm_end`    | An LLM call completes (includes token usage) |
+| `llm_error`  | An LLM call fails                            |
+| `tool_end`   | A tool finishes (e.g. RAG search, web search)|
+| `tool_error` | A tool raises an exception                   |
+
+### Log file location
+
+```
+logs/tracking.jsonl   ← append-mode, one JSON object per line
+```
+
+The `logs/` directory is committed to git (via `.gitkeep`), but `*.jsonl` files are gitignored.
+
+### Log format example
+
+```json
+{
+  "event_id": "a1b2c3d4-...",
+  "session_id": "user-thread-123",
+  "event_type": "chain_end",
+  "name": "triage_agent",
+  "start_time": 1700000000.123,
+  "end_time": 1700000001.456,
+  "latency_ms": 1333.0,
+  "token_usage": {},
+  "ram_usage": {"start_mb": 310.2, "end_mb": 311.5, "diff_mb": 1.3},
+  "metadata": {}
+}
+```
+
+For LLM events, `token_usage` is populated:
+
+```json
+{
+  "event_type": "llm_end",
+  "name": "llama3-8b",
+  "latency_ms": 2100.5,
+  "token_usage": {"prompt_tokens": 120, "completion_tokens": 85, "total_tokens": 205},
+  "ram_usage": {"start_mb": 315.0, "end_mb": 316.2, "diff_mb": 1.2}
+}
+```
+
+### Source files
+
+```
+src/agents/tracking/
+├── __init__.py          # Exports DiaCareFlowCallbackHandler
+├── models.py            # LogEvent dataclass
+├── logger.py            # JsonTrackingLogger (stdout + file)
+└── callback_handler.py  # DiaCareFlowCallbackHandler
+```
+

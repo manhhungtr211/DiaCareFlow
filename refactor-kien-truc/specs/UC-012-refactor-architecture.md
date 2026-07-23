@@ -20,10 +20,10 @@
 2. Hệ thống gửi câu hỏi qua Triage Agent (Tác nhân Sàng lọc/Phân loại) để kiểm tra mức độ an toàn.
 3. Triage Agent xác nhận câu hỏi an toàn và chuyển tiếp đến Supervisor Agent.
 4. Supervisor Agent phân chia task song song cho 3 Agent con: 
-    - Factor Agent (Tác nhân phân tích nguyên nhân)
+    - Factor Agent (Tác nhân phân tích nguyên nhân)l
     - Suggestion Agent (Tác nhân đưa ra đề xuất giải pháp)
     - Harm Assessment Agent (Tác nhân đánh giá rủi ro)
-5. Mỗi Agent con tự đánh giá và kích hoạt tool phù hợp (RAG, WebSearch hoặc cả 2) để thu thập thông tin.
+5. Mỗi Agent con tự đánh giá và kích hoạt tool phù hợp  để thu thập thông tin.
 6. Sau khi nhận kết quả từ tool, mỗi Agent con sử dụng LLM trích xuất các ý chính ngắn gọn đúng với chuyên môn của nó.
 7. Hệ thống tổng hợp các câu trả lời từ 3 Agent con và truyền vào một State dùng chung.
 8. Response Agent sử dụng State tổng hợp này để tạo câu trả lời cuối cùng và trả về cho người dùng.

@@ -73,30 +73,57 @@ def supervisor_node(state: AgentState) -> dict[str, Any]:
             history_text = "\n".join(history_lines)
 
         history_section = f"\nLịch sử hội thoại:\n{history_text}\n" if history_text else ""
-        prompt = f"""Phân loại tin nhắn sau thành MỘT trong hai nhãn:
-- SMALL_TALK: chào hỏi, cảm ơn, tạm biệt, trò chuyện thông thường, hỏi về cách thức hoạt động của hệ thống, hoặc các câu hỏi thông thường, không liên quan đến các thông tin y tế
-- DIABETES: câu hỏi hoặc yêu cầu thông tin về bệnh tiểu đường / sức khỏe
+#         prompt = f"""Phân loại tin nhắn sau thành MỘT trong hai nhãn:
+# - SMALL_TALK: chào hỏi, cảm ơn, tạm biệt, trò chuyện thông thường, hỏi về cách thức hoạt động của hệ thống, hoặc các câu hỏi thông thường, không liên quan đến các thông tin y tế
+# - DIABETES: câu hỏi hoặc yêu cầu thông tin về bệnh tiểu đường / sức khỏe
 
-Trả về KẾT QUẢ DƯỚI DẠNG JSON với cấu trúc sau:
-{{
-  "intent": "SMALL_TALK" hoặc "DIABETES",
-  "small_talk_reply": "Câu trả lời trực tiếp nếu intent là SMALL_TALK, ngược lại để chuỗi rỗng",
-  "factor_question": "Nếu intent là DIABETES: Câu hỏi phụ tập trung vào việc tìm hiểu nguyên nhân, cơ chế bệnh sinh của vấn đề người dùng hỏi. Ngược lại để chuỗi rỗng",
-  "suggestion_question": "Nếu intent là DIABETES: Câu hỏi phụ tập trung vào việc tìm giải pháp, lời khuyên thực tế cho người dùng. Ngược lại để chuỗi rỗng",
-  "harm_question": "Nếu intent là DIABETES: Câu hỏi phụ tập trung vào việc đánh giá rủi ro, cảnh báo an toàn sức khỏe. Ngược lại để chuỗi rỗng"
-}}
+# Trả về KẾT QUẢ DƯỚI DẠNG JSON với cấu trúc sau:
+# {{
+#   "intent": "SMALL_TALK" hoặc "DIABETES",
+#   "small_talk_reply": "Câu trả lời trực tiếp nếu intent là SMALL_TALK, ngược lại để chuỗi rỗng",
+#   "factor_question": "Nếu intent là DIABETES: Câu hỏi phụ tập trung vào việc tìm hiểu nguyên nhân, cơ chế bệnh sinh của vấn đề người dùng hỏi. Ngược lại để chuỗi rỗng",
+#   "suggestion_question": "Nếu intent là DIABETES: Câu hỏi phụ tập trung vào việc tìm giải pháp, lời khuyên thực tế cho người dùng. Ngược lại để chuỗi rỗng",
+#   "harm_question": "Nếu intent là DIABETES: Câu hỏi phụ tập trung vào việc đánh giá rủi ro, cảnh báo an toàn sức khỏe. Ngược lại để chuỗi rỗng"
+# }}
 
-{history_section}
-Tin nhắn: "{user_input}"
-KẾT QUẢ JSON:
+# {history_section}
+# Tin nhắn: "{user_input}"
+# KẾT QUẢ JSON:
+# """
+        prompt = f"""Bạn là Supervisor Agent trong multi-agent system hỗ trợ người dùng giải đáp các thắc mắc liên quan đến bệnh tiểu đường. "
+"Bạn chịu trách nhiệm phân tích thông tin nhập mới nhất của người dùng và toàn bộ lịch sử trò chuyện để đưa ra quyết định có cấu trúc, một bước duy nhất, hướng dẫn phần còn lại của hệ thống.\n\n"
+"Trách nhiệm:\n"
+"1. Hiểu ý định của người dùng dựa trên tin nhắn mới nhất của họ và toàn bộ lịch sử cuộc trò chuyện.\n"
+"2. Quyết định hành động tốt nhất tiếp theo dựa trên ngữ cảnh hiện tại:\n"
+"- Nếu câu hỏi mơ hồ, chung chung hoặc thiếu các chi tiết cần thiết, hãy yêu cầu làm rõ.\n"
+"- Nếu hệ thống cần thu thập thêm thông tin trước khi trả lời, hãy giao nhiệm vụ cụ thể cho một hoặc nhiều đặc vụ.\n"
+"- Nếu đã có đủ ngữ cảnh - hoặc nếu câu hỏi đơn giản (ví dụ: lời chào, trò chuyện xã giao) - hãy báo hiệu rằng hệ thống nên tiến hành trả lời cuối cùng.\n\n"
+"Các đặc vụ hiện có và vai trò của họ:\n"
+"- `suggestion_agent`: Cung cấp các đề xuất cụ thể, có thể thực hiện được liên quan đến bệnh tiểu đường. \n"
+"- `harm_agent`: Mô tả các tác hại và ảnh hưởng tiêu cực do bệnh tiểu đường gây ra.\n"
+"- `factor_agent`: Xác định các yếu tố góp phần gây ra bệnh tiểu đường.\n"
+"- `response_agent`: Đưa ra phản hồi cuối cùng khi không cần làm rõ thêm hoặc nhiệm vụ của tác nhân.\n\n"
+
+Định dạng đầu ra:\n"
+Trả về **chỉ một** trong các đầu ra có cấu trúc sau:\n\n"
+Tùy chọn 1 - Yêu cầu làm rõ:\n"
+- `follow_up_question`: Một câu hỏi tiếp theo rõ ràng. Nếu sử dụng trường này, không nên bao gồm các trường khác.\n\n"
+Tùy chọn 2 - Báo hiệu sẵn sàng phản hồi:\n"
+- `should_response`: Chỉ đặt thành True khi hệ thống có đủ thông tin để gọi `response_agent`. Không nên bao gồm các trường khác.\n\n"
+Tùy chọn 3 - Giao nhiệm vụ cho các tác nhân:\n"
+- Cung cấp bất kỳ sự kết hợp nào của:\n"    
+- `suggestion_agent`: Một tác vụ độc lập cho tác nhân đề xuất, hoặc None.\n"
+- `harm_agent`: Một tác vụ độc lập cho tác nhân gây hại, hoặc None.\n"
+- `factor_agent`: Một tác vụ độc lập cho tác nhân yếu tố, hoặc None.""
+History: {history_section}
+Message: "{user_input}"
 """
-
         llm = ChatGroq(
             model_name=GENERATIVE_MODEL,
             temperature=0.7,
         )
 
-        response = llm.invoke(prompt)
+        response = llm.invoke(prompt, config={"configurable": {"thread_id": thread_id}})
         response_text = response.content.strip()
 
         # Extract JSON from response
@@ -114,6 +141,7 @@ KẾT QUẢ JSON:
             parsed = json.loads(json_str)
             intent = parsed.get("intent", "DIABETES")
             small_talk_reply = parsed.get("small_talk_reply", "")
+            follow_up_question = parsed.get("follow_up_question, ")
             factor_question = parsed.get("factor_question", user_input)
             suggestion_question = parsed.get("suggestion_question", user_input)
             harm_question = parsed.get("harm_question", user_input)

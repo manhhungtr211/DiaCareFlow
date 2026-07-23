@@ -34,11 +34,17 @@ class AgentState(MessagesState):
     # Ghi bởi: suggestion_agent_node
     # Format: [{"suggestion_summary": str, "sources": list[dict]}]
 
-    harm_sub_results:   Annotated[list[dict], operator.add]
-    # Ghi bởi: harm_sub_agent_node
+    harm_results:   Annotated[list[dict], operator.add]
+    # Ghi bởi: harm_agent_node
     # Format: [{"harm_summary": str}]
   
     errors:             Annotated[list[str], operator.add]      # lỗi trong quá trình xử lý
+    follow_up_question: Optional[str] #Nếu câu hỏi chưa đủ rõ ràng thì supervisor sẽ đặt câu hỏi để làm rõ
+    factor_question: Optional[str] #Câu hỏi dành cho factor agent
+    suggestion_question: Optional[str] #Câu hỏi dành cho suggestion agent
+    harm_question: Optional[str] #Câu hỏi dành cho harm agent
+    should_response: Optional[bool] #Nếu True thì supervisor sẽ gọi response_agent
+
 ```
 
 ---

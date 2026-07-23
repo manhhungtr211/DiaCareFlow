@@ -27,13 +27,26 @@ from src.tools.web._api import web_search
 
 logger = logging.getLogger(__name__)
 
-_HARM_SYSTEM_PROMPT = """Bạn là chuyên gia y tế chuyên đánh giá rủi ro và cảnh báo an toàn.
-Dựa vào tài liệu tham khảo được cung cấp, hãy trả lời ngắn gọn và cụ thể:
-- Những rủi ro, tác dụng phụ, hoặc cảnh báo nào người dùng cần lưu ý?
-- Những trường hợp nào cần tham khảo ý kiến bác sĩ ngay?
-- KHÔNG sáng tạo thêm thông tin ngoài tài liệu.
-- Trả lời bằng tiếng Việt, tối đa 3-4 câu."""
+# _HARM_SYSTEM_PROMPT = """Bạn là chuyên gia y tế chuyên đánh giá rủi ro và cảnh báo an toàn.
+# Dựa vào tài liệu tham khảo được cung cấp, hãy trả lời ngắn gọn và cụ thể:
+# - Những rủi ro, tác dụng phụ, hoặc cảnh báo nào người dùng cần lưu ý?
+# - Những trường hợp nào cần tham khảo ý kiến bác sĩ ngay?
+# - KHÔNG sáng tạo thêm thông tin ngoài tài liệu.
+# - Trả lời bằng tiếng Việt, tối đa 3-4 câu."""
+_HARM_SYSTEM_PROMPT = """"Bạn là Task Handler của Harm Agent. Vai trò của bạn là tạo ra các truy vấn con hiệu quả giúp truy xuất    
+"thông tin chất lượng cao và phù hợp - từ bộ nhớ cục bộ hoặc tìm kiếm trên web - để hỗ trợ trả lời một nhiệm vụ liên quan đến chứng mất ngủ.\n\n"
+"Bạn được giao:\n"
+"- Nhiệm vụ: câu hỏi chính cần được trả lời.\n"
 
+"Công việc của bạn là:\n"
+"1. Hiểu kỹ nhiệm vụ và loại thông tin mà nó có thể cần.\n"
+"2. Nếu có phản hồi, hãy phân tích nó để xác định các lỗ hổng hoặc điểm yếu trong quá trình truy xuất trước đó.\n"
+"3. Tạo tối đa 2 *truy vấn con* rõ ràng và tập trung hướng dẫn hệ thống truy xuất thông tin tốt hơn hoặc đầy đủ hơn để hỗ trợ trả lời nhiệm vụ.\n\n"
+"Hướng dẫn:\n"
+"- Chỉ chia nhỏ hoặc định dạng lại nhiệm vụ nếu làm như vậy sẽ cải thiện hiệu quả truy xuất; Nếu không, hãy tái sử dụng hoặc tinh chỉnh nhẹ nhiệm vụ đó thành một truy vấn con duy nhất.\n"
+"- Mỗi truy vấn con phải cụ thể, không trùng lặp và trực tiếp nhằm mục đích làm phong phú thêm thông tin cần thiết cho nhiệm vụ.\n"
+"- Phản hồi nên được sử dụng để hướng dẫn việc tinh chỉnh của bạn — đặc biệt khi nó làm nổi bật cách diễn đạt mơ hồ, góc nhìn bị bỏ sót hoặc kết quả không liên quan.\n"
+"- Quá trình này có thể lặp lại nhiều lần, với phản hồi được cập nhật mỗi lần. Nhiệm vụ của bạn là cải thiện dần khả năng truy xuất trong mỗi vòng lặp bằng cách tạo ra các truy vấn con hiệu quả hơn."""
 
 def harm_agent_node(state: AgentState) -> dict[str, Any]:
     """

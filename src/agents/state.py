@@ -50,6 +50,8 @@ class AgentState(MessagesState):
 
     # --- Supervisor output ---
     intent: str  # "SMALL_TALK" | "DIABETES" — set by supervisor_node
+    follow_up_question: str
+    should_response: bool
     small_talk_reply: str  # Pre-generated reply from supervisor LLM when intent == SMALL_TALK
     factor_question: str  # Sub-question for factor_agent
     suggestion_question: str  # Sub-question for suggestion_agent

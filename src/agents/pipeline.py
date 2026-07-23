@@ -20,6 +20,7 @@ from langchain_groq import ChatGroq
 
 from src.agents.graph import compile_graph
 from src.agents.state import AgentState, SafetyCategory
+from src.agents.tracking import DiaCareFlowCallbackHandler
 from src.config import CHAT_HISTORY_MAX_TOKENS, GENERATIVE_MODEL
 from src.tools.rag.qa.data_models import Answer, ChunkResult
 
@@ -27,6 +28,9 @@ logger = logging.getLogger(__name__)
 
 # Compile graph once at module level for reuse
 _compiled_graph = None
+
+# Tracking callback handler — singleton, session_id updated per-invocation
+_tracking_handler = DiaCareFlowCallbackHandler()
 
 
 def _get_graph():
@@ -138,8 +142,15 @@ def ask_langgraph(question: str, session_id: str | None = None) -> Answer:
             "chat_history": trimmed_history,
         }
 
+        # BR-004: Update tracking handler with current session_id for context
+        _tracking_handler._session_id = session_id or ""
+
+        # Merge tracking callback with existing config (preserves thread_id)
+        invoke_config = dict(config)
+        invoke_config["callbacks"] = [_tracking_handler]
+
         # Invoke the graph with thread config for MemorySaver
-        final_state = graph.invoke(initial_state, config=config)
+        final_state = graph.invoke(initial_state, config=invoke_config)
 
         elapsed_ms = (time.time() - start_time) * 1000
         logger.info(
