@@ -121,22 +121,24 @@ def ask_langgraph(question: str, session_id: str | None = None) -> Answer:
         all_messages = list(existing_messages) + [current_user_msg]
         trimmed_history = _build_chat_history(all_messages)
 
-        # Build initial state (UC-012: removed rag_context; added fan-in fields)
+        # Build initial state (UC-012 v2: harm_results, response_context, task fields)
         initial_state: dict = {
             "user_input": question,
             "messages": [current_user_msg],
             "is_safe": True,
-            "harm_task": SafetyCategory.SAFE,
+            "triage_results": SafetyCategory.SAFE,
             "intent": "DIABETES",
             "small_talk_reply": "",
-            "factor_question": "",
-            "suggestion_question": "",
-            "harm_question": "",
+            "follow_up_question": "",
+            "should_response": False,
+            "factor_task": "",
+            "suggestion_task": "",
+            "harm_task": "",
             "factor_results": [],
             "suggestion_results": [],
-            "harm_sub_results": [],
+            "harm_results": [],
             "errors": [],
-            "suggestion_context": {},
+            "response_context": {},
             "messageId": "",
             "nodes_visited": [],
             "chat_history": trimmed_history,
@@ -190,15 +192,15 @@ def _state_to_answer(state: dict) -> Answer:
     """
     Convert final AgentState to Answer dataclass.
 
-    Handles both the safe path (suggestion_context has final_answer)
-    and the refusal path (suggestion_context has refusal_message).
+    Handles both the safe path (response_context has final_answer)
+    and the refusal path (response_context has refusal_message).
     """
     is_safe = state.get("is_safe", True)
-    suggestion = state.get("suggestion_context", {})
+    response = state.get("response_context", {})
     errors = state.get("errors", [])  # UC-012: errors is now a list (was singular 'error')
 
-    # Error path — node encountered an error with no usable suggestion_context
-    if errors and not suggestion:
+    # Error path — node encountered an error with no usable response_context
+    if errors and not response:
         error_text = "; ".join(errors)
         return Answer(
             text=f"Đã xảy ra lỗi: {error_text}",
@@ -208,22 +210,22 @@ def _state_to_answer(state: dict) -> Answer:
 
     # Refusal path — question was unsafe
     if not is_safe:
-        refusal_message = suggestion.get(
+        refusal_message = response.get(
             "refusal_message",
             "Xin lỗi, câu hỏi của bạn nằm ngoài phạm vi hỗ trợ.",
         )
-        harm_task = state.get("harm_task", SafetyCategory.PRESCRIPTION)
+        triage_results = state.get("triage_results", SafetyCategory.PRESCRIPTION)
 
         return Answer(
             text=refusal_message,
             sources=[],
             is_refused=True,
-            refuse_reason=harm_task.value if isinstance(harm_task, SafetyCategory) else str(harm_task),
+            refuse_reason=triage_results.value if isinstance(triage_results, SafetyCategory) else str(triage_results),
         )
 
     # Happy path — answer generated
-    final_answer = suggestion.get("final_answer", "")
-    sources_dicts = suggestion.get("sources", [])
+    final_answer = response.get("final_answer", "")
+    sources_dicts = response.get("sources", [])
 
     # Reconstruct ChunkResult objects for Answer
     sources = [
@@ -238,6 +240,6 @@ def _state_to_answer(state: dict) -> Answer:
     return Answer(
         text=final_answer,
         sources=sources,
-        is_refused=suggestion.get("is_refused", False),
-        refuse_reason=suggestion.get("refuse_reason"),
+        is_refused=response.get("is_refused", False),
+        refuse_reason=response.get("refuse_reason"),
     )

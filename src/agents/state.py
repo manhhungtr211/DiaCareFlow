@@ -46,16 +46,16 @@ class AgentState(MessagesState):
 
     # --- Triage Agent output (UC-012: renamed from harm_assessment) ---
     is_safe: bool  # Whether the question passed safety check
-    harm_task: SafetyCategory  # Safety classification result
+    triage_results: SafetyCategory  # Safety classification result
 
     # --- Supervisor output ---
     intent: str  # "SMALL_TALK" | "DIABETES" — set by supervisor_node
     follow_up_question: str
     should_response: bool
     small_talk_reply: str  # Pre-generated reply from supervisor LLM when intent == SMALL_TALK
-    factor_question: str  # Sub-question for factor_agent
-    suggestion_question: str  # Sub-question for suggestion_agent
-    harm_question: str  # Sub-question for harm_agent
+    factor_task: str  # task for factor_agent
+    suggestion_task: str  # task for suggestion_agent
+    harm_task: str  # task for harm_agent
 
 
     # --- Sub-Agent results (UC-012: fan-in via operator.add reducer) ---
@@ -67,8 +67,8 @@ class AgentState(MessagesState):
     # Written by: suggestion_agent_node
     # Format: [{"suggestion_summary": str, "sources": list[dict]}]
 
-    harm_sub_results: Annotated[list[dict], operator.add]
-    # Written by: harm_sub_agent_node
+    harm_results: Annotated[list[dict], operator.add]
+    # Written by: harm_agent_node
     # Format: [{"harm_summary": str}]
 
     # --- Error accumulation (UC-012: fan-in, per-node errors don't stop flow) ---
@@ -76,7 +76,7 @@ class AgentState(MessagesState):
     # Each node appends error strings; Response Agent surfaces them if needed.
 
     # --- Response output ---
-    suggestion_context: dict  # Final answer and metadata from response agent
+    response_context: dict  # Final answer and metadata from response agent
 
     # --- Metadata ---
     messageId: str  # Message identifier for tracking

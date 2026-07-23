@@ -39,8 +39,8 @@ def triage_agent_node(state: AgentState) -> dict[str, Any]:
     Evaluate question safety using the existing guardrail module.
 
     Reads: user_input
-    Writes: is_safe, harm_task, suggestion_context (refusal_message if unsafe),
-            nodes_visited, error
+    Writes: is_safe, triage_results, response_context (refusal_message if unsafe),
+            nodes_visited, errors
     """
     logger.info("Harm Assessment Agent: evaluating question safety")
 
@@ -52,12 +52,12 @@ def triage_agent_node(state: AgentState) -> dict[str, Any]:
             logger.warning("Harm Assessment: empty or whitespace-only input")
             return {
                 "is_safe": False,
-                "harm_task": SafetyCategory.SAFE,
-                "suggestion_context": {
+                "triage_results": SafetyCategory.SAFE,
+                "response_context": {
                     "refusal_message": "Câu hỏi không hợp lệ. Vui lòng nhập câu hỏi rõ ràng."
                 },
                 "nodes_visited": ["triage_agent"],
-                "error": "Empty input",
+                "errors": ["Empty input"],
             }
 
         # Check for special-char-only input
@@ -65,12 +65,12 @@ def triage_agent_node(state: AgentState) -> dict[str, Any]:
             logger.warning("Harm Assessment: special-char-only input")
             return {
                 "is_safe": False,
-                "harm_task": SafetyCategory.SAFE,
-                "suggestion_context": {
+                "triage_results": SafetyCategory.SAFE,
+                "response_context": {
                     "refusal_message": "Vui lòng nhập câu hỏi rõ ràng bằng văn bản."
                 },
                 "nodes_visited": ["triage_agent"],
-                "error": "Special characters only",
+                "errors": ["Special characters only"],
             }
 
         # Create Query object for guardrail
@@ -83,7 +83,7 @@ def triage_agent_node(state: AgentState) -> dict[str, Any]:
             logger.info("Harm Assessment: question is SAFE")
             return {
                 "is_safe": True,
-                "harm_task": SafetyCategory.SAFE,
+                "triage_results": SafetyCategory.SAFE,
                 "nodes_visited": ["triage_agent"],
             }
         else:
@@ -94,8 +94,8 @@ def triage_agent_node(state: AgentState) -> dict[str, Any]:
             logger.info(f"Harm Assessment: question is UNSAFE ({category.value})")
             return {
                 "is_safe": False,
-                "harm_task": category,
-                "suggestion_context": {"refusal_message": refusal_msg},
+                "triage_results": category,
+                "response_context": {"refusal_message": refusal_msg},
                 "nodes_visited": ["triage_agent"],
             }
 
@@ -105,9 +105,9 @@ def triage_agent_node(state: AgentState) -> dict[str, Any]:
         # This matches the existing guardrail.py behavior
         return {
             "is_safe": True,
-            "harm_task": SafetyCategory.SAFE,
+            "triage_results": SafetyCategory.SAFE,
             "nodes_visited": ["triage_agent"],
-            "error": f"Harm Assessment error: {str(e)}",
+            "errors": [f"Harm Assessment error: {str(e)}"],
         }
 
 

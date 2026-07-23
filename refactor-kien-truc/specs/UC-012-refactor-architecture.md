@@ -1,6 +1,8 @@
 # UC-012: Xử lý câu hỏi người dùng qua hệ thống Multi-Agent
 
 **Feature ID**: `UC-012`
+**Version**: 2.0.0
+**Date**: 23/07/2026
 **Input**: 
 
 ---
@@ -20,12 +22,12 @@
 2. Hệ thống gửi câu hỏi qua Triage Agent (Tác nhân Sàng lọc/Phân loại) để kiểm tra mức độ an toàn.
 3. Triage Agent xác nhận câu hỏi an toàn và chuyển tiếp đến Supervisor Agent.
 4. Supervisor Agent phân chia task song song cho 3 Agent con: 
-    - Factor Agent (Tác nhân phân tích nguyên nhân)l
-    - Suggestion Agent (Tác nhân đưa ra đề xuất giải pháp)
-    - Harm Assessment Agent (Tác nhân đánh giá rủi ro)
-5. Mỗi Agent con tự đánh giá và kích hoạt tool phù hợp  để thu thập thông tin.
+    - Factor Agent (Tác nhân xác định các yếu tố góp phần gây ra bệnh tiểu đường)l
+    - Suggestion Agent (Tác nhân cung cấp các đề xuất cụ thể, có thể thực hiện được liên quan đến bệnh tiểu đường)
+    - Harm Agent (Tác nhân mô tả các tác hại và ảnh hưởng tiêu cực do bệnh tiểu đường gây ra)
+5. Mỗi Agent con kích hoạt tool phù hợp (Web Search hoặc RAG) để thu thập thông tin.
 6. Sau khi nhận kết quả từ tool, mỗi Agent con sử dụng LLM trích xuất các ý chính ngắn gọn đúng với chuyên môn của nó.
-7. Hệ thống tổng hợp các câu trả lời từ 3 Agent con và truyền vào một State dùng chung.
+7. Hệ thống tổng hợp kết quả từ 3 Agent con (kèm metadata source, được định nghĩa trong state của agent đó) và truyền vào một State dùng chung.
 8. Response Agent sử dụng State tổng hợp này để tạo câu trả lời cuối cùng và trả về cho người dùng.
 
 
@@ -49,3 +51,5 @@ And: Không có bất kỳ Agent con hay Tool nào (RAG/SearXNG) bị kích ho�
 ## Notes
 <!-- - **Context refactor:** UC này thay thế cho luồng kiến trúc cũ nhằm giải quyết tình trạng Agent bị quá tải ngữ cảnh và tốn kém token (Chi tiết triển khai kỹ thuật xem tại `design.md`). -->
 - Giải thích vì sao thay đổi nằm ở `proposal.md`
+
+

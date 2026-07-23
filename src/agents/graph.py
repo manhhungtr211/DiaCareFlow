@@ -95,7 +95,7 @@ def aggregate_node(state: AgentState) -> dict[str, Any]:
     sub-agent results into state via operator.add reducers:
       - state["factor_results"]    from factor_agent
       - state["suggestion_results"] from suggestion_agent
-      - state["harm_sub_results"]  from harm_sub_agent
+      - state["harm_results"]    from harm_agent
 
     This node is a pure pass-through — it exists as an explicit
     synchronization point in the graph so response_agent has a
@@ -103,7 +103,7 @@ def aggregate_node(state: AgentState) -> dict[str, Any]:
     """
     factor_count = len(state.get("factor_results", []))
     suggestion_count = len(state.get("suggestion_results", []))
-    harm_count = len(state.get("harm_sub_results", []))
+    harm_count = len(state.get("harm_results", []))
     error_count = len(state.get("errors", []))
 
     logger.info(

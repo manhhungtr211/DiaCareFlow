@@ -97,32 +97,43 @@ def factor_agent_node(state: AgentState) -> dict[str, Any]:
 
         # --- Step 3: LLM summarization ---
         if context_text:
-            prompt = f"""{_FACTOR_SYSTEM_PROMPT}
+            extractor_prompt = f"""Bạn là một Extractor Agent trong hệ thống multi-agent hỗ trợ trả lời các truy vấn liên quan đến bệnh tiểu đường.
 
-Tài liệu tham khảo:
+Nhiệm vụ cần trả lời: {user_input}
+
+Danh sách Ngữ cảnh Đã Truy xuất:
 {context_text}
 
-Câu hỏi của người dùng: {user_input}
+Công việc của bạn là:
+1. Đọc và hiểu nhiệm vụ.
+2. Xem xét cẩn thận từng ngữ cảnh được cung cấp.
+3. Chỉ trích xuất thông tin có liên quan và hữu ích để trả lời nhiệm vụ — tập trung vào nguyên nhân, yếu tố, cơ chế liên quan đến bệnh tiểu đường.
+4. Loại bỏ bất kỳ nội dung nào rõ ràng không liên quan, dư thừa, hoặc không cung cấp thông tin.
+5. Đối với ngữ cảnh tìm kiếm trên web, xác định và trích xuất bất kỳ phần nào thực sự hữu ích.
 
-Phân tích nguyên nhân / cơ chế:"""
+Đối với mỗi nguồn, hãy trả về:
+- **URL hoặc Nguồn**
+- **Ngữ cảnh được trích xuất**: một bản tóm tắt ngắn gọn, liên quan đến nhiệm vụ về thông tin từ nguồn đó.
+
+Chỉ xuất ra các mục được trích xuất cuối cùng. Không bao gồm giải thích, các bướng lập luận hoặc bình luận bổ sung.
+"""
+            llm = ChatGroq(model_name=GENERATIVE_MODEL, temperature=0.1)
+            response = llm.invoke(extractor_prompt)
+            factor_summary = response.content.strip()
+
+            logger.info(f"Factor Agent: generated summary (length={len(factor_summary)} chars)")
+
+            return {
+                "factor_results": [{"factor_summary": factor_summary, "sources": sources}],
+                "nodes_visited": ["factor_agent"],
+            }
         else:
-            prompt = f"""{_FACTOR_SYSTEM_PROMPT}
-
-Không có tài liệu tham khảo nào được tìm thấy.
-Câu hỏi của người dùng: {user_input}
-
-Phân tích nguyên nhân / cơ chế (dựa trên kiến thức y khoa chung):"""
-
-        llm = ChatGroq(model_name=GENERATIVE_MODEL, temperature=0.3)
-        response = llm.invoke(prompt)
-        factor_summary = response.content.strip()
-
-        logger.info(f"Factor Agent: generated summary (length={len(factor_summary)} chars)")
-
-        return {
-            "factor_results": [{"factor_summary": factor_summary, "sources": sources}],
-            "nodes_visited": ["factor_agent"],
-        }
+            # T037: No context available — return empty results (never return "", LangGraph requires dict)
+            logger.warning("Factor Agent: no context found from any tool")
+            return {
+                "factor_results": [],
+                "nodes_visited": ["factor_agent"],
+            }
 
     except Exception as e:
         logger.error(f"Factor Agent error: {e}", exc_info=True)

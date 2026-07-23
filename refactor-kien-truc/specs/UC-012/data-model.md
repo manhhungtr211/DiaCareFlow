@@ -19,7 +19,6 @@ class AgentState(MessagesState):
     suggestion_context: dict               # Final answer + metadata (Response Agent output)
     messageId: str                         # Message tracking ID
     nodes_visited: Annotated[list[str], operator.add]  # Visited nodes log
-    error: Optional[str]                   # Error message
     chat_history: list                     # Trimmed history for LLM
 
     # === REMOVED FIELDS ===
@@ -46,7 +45,45 @@ class AgentState(MessagesState):
     should_response: Optional[bool] #Nếu True thì supervisor sẽ gọi response_agent
 
 ```
-
+```python
+class FactorState(TypedDict): # state cho rag
+    rag_sources: dict #src của nguồn truy xuất từ rag (nếu có): gồm tên file, title, description, chunks, filtered_contexts
+    web_sources: dict #src của nguồn truy xuất từ web (nếu có): gồm url, title, snippet, filtered_contexts
+    factor_task: str #task từ supervior giao cho
+    queries: List[str] #query sinh ra sau khi đưa harm_task vào LLM 
+    factor_context: dict # gồm nội dung các response sau khi đưa các query vào LLM và xử lý bởi rag_agent và web_agent, chứa rag_src và web_src
+    messageId: str
+```
+```python
+class FactorOutputState(TypedDict): #state này để trả về cho Supervior Node
+    factor_results: List[dict] # giống harm_context 
+```
+```python
+class HarmState(TypedDict): # state cho rag
+    rag_sources: dict #src của nguồn truy xuất từ rag (nếu có): gồm tên file, title, description, chunks, filtered_contexts
+    web_sources: dict #src của nguồn truy xuất từ web (nếu có): gồm url, title, snippet, filtered_contexts
+    harm_task: str #task từ supervior giao cho
+    queries: List[str] #query sinh ra sau khi đưa harm_task vào LLM 
+    harm_context: dict # gồm nội dung các response sau khi đưa các query vào LLM và xử lý bởi rag_agent và web_agent, chứa rag_src và web_src
+    messageId: str
+```
+```python
+class HarmOutputState(TypedDict): #state này để trả về cho Supervior Node
+    harm_results: List[dict] # giống harm_context 
+```
+```python
+class SuggestionState(TypedDict): # state cho rag
+    rag_sources: dict #src của nguồn truy xuất từ rag (nếu có): gồm tên file, title, description, chunks, filtered_contexts
+    web_sources: dict #src của nguồn truy xuất từ web (nếu có): gồm url, title, snippet, filtered_contexts
+    suggestion_task: str #task từ supervior giao cho
+    queries: List[str] #query sinh ra sau khi đưa harm_task vào LLM 
+    suggestion_context: dict # gồm nội dung các response sau khi đưa các query vào LLM và xử lý bởi rag_agent và web_agent, chứa rag_src và web_src
+    messageId: str
+```
+```python
+class SuggestionOutputState(TypedDict): #state này để trả về cho Supervior Node
+    suggestion_results: List[dict] # giống harm_context 
+```
 ---
 
 ## Graph Topology (Updated)

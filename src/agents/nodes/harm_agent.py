@@ -101,39 +101,54 @@ def harm_agent_node(state: AgentState) -> dict[str, Any]:
 
         # --- Step 3: LLM summarization ---
         if context_text:
-            prompt = f"""{_HARM_SYSTEM_PROMPT}
+            extractor_prompt = """
+            "Bạn là một Extractor Agent trong multi-agent system để hỗ trợ trả lời các truy vấn liên quan đến bệnh tiểu đường.\n\n"
+            "Bạn được giao:\n"
+            "- Nhiệm vụ: một câu hỏi cụ thể liên quan đến bệnh tiểu đường cần thông tin để trả lời.\n"
+            "- Danh sách các Ngữ cảnh Đã Truy xuất: mỗi ngữ cảnh được truy xuất từ ​​một nguồn duy nhất thông qua RAG (cơ sở dữ liệu cục bộ) hoặc tìm kiếm trên web.\n\n"
+            "Mỗi ngữ cảnh được định dạng như sau:\n```\n"
+            "[Số] Tiêu đề (nếu có)\n"
+            "URL (nếu từ tìm kiếm trên web) hoặc Nguồn (nếu từ RAG)\n"
+            "Mô tả (nếu từ tìm kiếm trên web)\n"
+            "Ngữ cảnh Đã Truy xuất\n```\n\n"
+            "Công việc của bạn là:\n"
+            "1. Đọc và hiểu nhiệm vụ.\n"
+            "2. Xem xét cẩn thận từng ngữ cảnh được cung cấp.\n"
+            "3. Chỉ trích xuất thông tin có liên quan và hữu ích để trả lời nhiệm vụ.\n"
+            "4. Loại bỏ bất kỳ nội dung nào rõ ràng không liên quan, dư thừa, hoặc không cung cấp thông tin.\n"
+            "5. Đối với ngữ cảnh tìm kiếm trên web, hãy lưu ý rằng chúng có thể chứa thông tin nhiễu hoặc thông tin chung chung — tuy nhiên, đừng loại bỏ chúng hoàn toàn. Xác định và trích xuất bất kỳ phần nào thực sự hữu ích.\n\n" 
+            "Đối với mỗi nguồn, hãy trả về:\n"
+            "- **URL hoặc Nguồn**\n"
+            "- **Ngữ cảnh được trích xuất**: một bản tóm tắt ngắn gọn, liên quan đến nhiệm vụ về thông tin từ nguồn đó.\n\n"
+            "Chỉ xuất ra các mục được trích xuất cuối cùng theo định dạng được chỉ định. Không bao gồm giải thích, các bước lập luận hoặc bất kỳ bình luận bổ sung nào."
+            "Dưới đây là thông tin được cung cấp:"
+            "Nhiệm vụ cần trả lời: {user_input}"
+            "Danh sách Ngữ cảnh Đã Truy xuất: {context_text}"
+"""
+            llm = ChatGroq(model_name=GENERATIVE_MODEL, temperature=0.1)
+            response = llm.invoke(extractor_prompt)
+            harm_summary = response.content.strip()
 
-Tài liệu tham khảo:
-{context_text}
+            logger.info(
+                f"Harm Sub-Agent: generated summary (length={len(harm_summary)} chars)"
+            )
 
-Câu hỏi của người dùng: {user_input}
-
-Đánh giá rủi ro và cảnh báo an toàn:"""
+            return {
+                "harm_results": [{"harm_summary": harm_summary}],
+                "nodes_visited": ["harm_agent"],
+            }
         else:
-            prompt = f"""{_HARM_SYSTEM_PROMPT}
-
-Không có tài liệu tham khảo nào được tìm thấy.
-Câu hỏi của người dùng: {user_input}
-
-Đánh giá rủi ro và cảnh báo an toàn (dựa trên kiến thức y khoa chung):"""
-
-        llm = ChatGroq(model_name=GENERATIVE_MODEL, temperature=0.2)
-        response = llm.invoke(prompt)
-        harm_summary = response.content.strip()
-
-        logger.info(
-            f"Harm Sub-Agent: generated summary (length={len(harm_summary)} chars)"
-        )
-
-        return {
-            "harm_sub_results": [{"harm_summary": harm_summary}],
-            "nodes_visited": ["harm_sub_agent"],
-        }
+            # T039: No context available — return empty results (never return "", LangGraph requires dict)
+            logger.warning("Harm Agent: no context found from any tool")
+            return {
+                "harm_results": [],
+                "nodes_visited": ["harm_agent"],
+            }
 
     except Exception as e:
         logger.error(f"Harm Sub-Agent error: {e}", exc_info=True)
         return {
-            "harm_sub_results": [],
-            "nodes_visited": ["harm_sub_agent"],
+            "harm_results": [],
+            "nodes_visited": ["harm_agent"],
             "errors": [f"Harm Sub-Agent error: {str(e)}"],
         }
