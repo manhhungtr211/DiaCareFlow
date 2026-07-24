@@ -11,6 +11,7 @@ Run with:
 from __future__ import annotations
 
 import logging
+from contextlib import asynccontextmanager
 
 # Configure basic logging to display INFO level messages and above
 logging.basicConfig(
@@ -23,13 +24,47 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from src.tools.rag.embedding_model import load_bge_m3
+
 logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Lifespan — load heavy resources once before accepting requests (UC-014)
+# ---------------------------------------------------------------------------
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    FastAPI lifespan handler.
+
+    Startup:
+        - Load BGE-M3 embedding model into memory (with retry logic).
+          If loading fails after 3 attempts, the application exits so that
+          the process manager can surface the error clearly.
+
+    Shutdown:
+        - No teardown required (model lives in process memory).
+    """
+    logger.info("Application startup: loading BGE-M3 embedding model…")
+    try:
+        load_bge_m3(max_retries=3)
+    except RuntimeError as exc:
+        logger.critical(
+            "FATAL: BGE-M3 model could not be loaded. Aborting startup. Error: %s", exc
+        )
+        raise
+
+    yield  # Application is live — serve requests
+
+    logger.info("Application shutdown complete.")
+
 
 app = FastAPI(
     title="DiaCareFlow API",
     description="REST API for the DiaCareFlow Diabetes Care Support System. "
     "Wraps the Multi-Agent LangGraph pipeline (UC-005) via a POST /api/chat endpoint.",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 # ---------------------------------------------------------------------------

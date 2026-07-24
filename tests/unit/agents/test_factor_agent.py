@@ -1,8 +1,12 @@
 """
-Unit tests for factor_agent_node (UC-012).
+Unit tests for factor_agent_node (UC-015).
 
 All external calls (retrieve, web_search, ChatGroq) are mocked.
 No network or Qdrant access required.
+
+In the UC-015 flow, the LLM is called TWICE per agent invocation:
+  1. Sub-query generation from *_task (returns list of queries).
+  2. Context extraction/summarization (returns factor_summary).
 """
 
 from __future__ import annotations
@@ -44,10 +48,15 @@ class TestFactorAgentHappyPath:
         """Should write factor_results with summary and sources when RAG succeeds."""
         mock_retrieve.return_value = _make_retrieved([_make_chunk()])
         mock_llm = MagicMock()
-        mock_llm.invoke.return_value = MagicMock(content="Nguyên nhân: do tiểu đường type 2")
+        # First call: sub-query generation (returns one query line)
+        # Second call: extraction (returns the summary)
+        mock_llm.invoke.side_effect = [
+            MagicMock(content="Tại sao bị tiểu đường?"),  # sub-query
+            MagicMock(content="Nguyên nhân: do tiểu đường type 2"),  # extraction
+        ]
         mock_llm_cls.return_value = mock_llm
 
-        state = {"user_input": "Tại sao bị tiểu đường?", "chat_history": []}
+        state = {"user_input": "Tại sao bị tiểu đường?", "factor_task": "Tại sao bị tiểu đường?", "chat_history": []}
         result = factor_agent_node(state)
 
         assert "factor_results" in result
@@ -57,6 +66,8 @@ class TestFactorAgentHappyPath:
         assert "nodes_visited" in result
         assert "factor_agent" in result["nodes_visited"]
         assert "errors" not in result  # no errors on happy path
+        # LLM must be called at least twice: sub-query gen + extraction
+        assert mock_llm.invoke.call_count >= 2
 
     @patch("src.agents.nodes.factor_agent.ChatGroq")
     @patch("src.agents.nodes.factor_agent.retrieve")
@@ -65,10 +76,13 @@ class TestFactorAgentHappyPath:
         chunk = _make_chunk(content="RAG content", source="source.pdf", score=0.8)
         mock_retrieve.return_value = _make_retrieved([chunk])
         mock_llm = MagicMock()
-        mock_llm.invoke.return_value = MagicMock(content="Summary")
+        mock_llm.invoke.side_effect = [
+            MagicMock(content="question"),  # sub-query gen
+            MagicMock(content="Summary"),   # extraction
+        ]
         mock_llm_cls.return_value = mock_llm
 
-        state = {"user_input": "question", "chat_history": []}
+        state = {"user_input": "question", "factor_task": "question", "chat_history": []}
         result = factor_agent_node(state)
 
         sources = result["factor_results"][0]["sources"]
@@ -87,10 +101,13 @@ class TestFactorAgentRagFallback:
         mock_retrieve.return_value = _make_retrieved([])  # no chunks
         mock_asyncio_run.return_value = _make_web_result()
         mock_llm = MagicMock()
-        mock_llm.invoke.return_value = MagicMock(content="Web-based summary")
+        mock_llm.invoke.side_effect = [
+            MagicMock(content="query"),         # sub-query gen
+            MagicMock(content="Web-based summary"),  # extraction
+        ]
         mock_llm_cls.return_value = mock_llm
 
-        state = {"user_input": "question", "chat_history": []}
+        state = {"user_input": "question", "factor_task": "question", "chat_history": []}
         result = factor_agent_node(state)
 
         mock_asyncio_run.assert_called_once()
@@ -106,18 +123,25 @@ class TestFactorAgentErrorIsolation:
     def test_rag_and_web_both_fail_returns_empty_factor_results(
         self, mock_retrieve, mock_asyncio_run, mock_llm_cls
     ):
-        """If both RAG and web_search fail, LLM is still called with no context."""
+        """If both RAG and web_search fail, should return empty factor_results.
+
+        In UC-015 flow, the sub-query LLM call succeeds (returns fallback to task),
+        but retrieval from both sources fails → no context → empty results.
+        """
         mock_retrieve.side_effect = ConnectionError("Qdrant down")
         mock_asyncio_run.side_effect = Exception("Web unreachable")
         mock_llm = MagicMock()
-        mock_llm.invoke.return_value = MagicMock(content="General knowledge answer")
+        # sub-query generation succeeds (returns the task as-is)
+        mock_llm.invoke.return_value = MagicMock(content="question")
         mock_llm_cls.return_value = mock_llm
 
-        state = {"user_input": "question", "chat_history": []}
+        state = {"user_input": "question", "factor_task": "question", "chat_history": []}
         result = factor_agent_node(state)
 
-        # Should still return a result (LLM called with general prompt)
-        assert len(result["factor_results"]) == 1
+        # Should return empty result without calling extraction LLM
+        assert len(result["factor_results"]) == 0
+        # sub-query gen is called once, extraction is NOT called (no context)
+        assert mock_llm.invoke.call_count == 1
 
     @patch("src.agents.nodes.factor_agent.ChatGroq")
     @patch("src.agents.nodes.factor_agent.retrieve")
@@ -128,7 +152,7 @@ class TestFactorAgentErrorIsolation:
         mock_llm.invoke.side_effect = Exception("LLM timeout")
         mock_llm_cls.return_value = mock_llm
 
-        state = {"user_input": "question", "chat_history": []}
+        state = {"user_input": "question", "factor_task": "question", "chat_history": []}
         result = factor_agent_node(state)
 
         assert result["factor_results"] == []

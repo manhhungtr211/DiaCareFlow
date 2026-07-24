@@ -1,113 +1,40 @@
-# Quickstart Validation Guide: UC-012
-
-**Date**: 2026-07-17 | **Feature**: UC-012 Multi-Agent Refactor
-
----
+# Quickstart: Testing the Multi-Agent Flow (UC-012)
 
 ## Prerequisites
+- Server đang chạy: `uvicorn src.api.main:app --reload`
+- Web UI (Tùy chọn): `npm run dev` trong thư mục `frontend/`
+
+## Testing via CLI (curl)
+
+To validate the happy path (AC-1), trigger a question that involves all three agents: factors (causes), suggestions, and harms.
 
 ```bash
-# 1. Môi trường Python đã activate
-conda activate DiaCareFlow   # hoặc tên env của bạn
-
-# 2. Qdrant đang chạy (cho RAG)
-docker ps | grep qdrant
-
-# 3. SearXNG đang chạy (cho WebSearch)
-# Kiểm tra: curl http://localhost:8080/search?q=test&format=json
-
-# 4. Biến môi trường
-cp .env.example .env         # đã có GROQ_API_KEY, QDRANT_URL, etc.
+curl -X POST http://localhost:8000/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Bệnh tiểu đường có những nguyên nhân nào, cách phòng ngừa ra sao và có nguy hiểm không?"}'
 ```
 
----
+**Expected Outcome**:
+1. Server logs show the request passing `triage_agent`.
+2. `supervisor` classifies intent as `DIABETES`, sets `should_response=False`, and generates `factor_task`, `suggestion_task`, and `harm_task`.
+3. `factor_agent`, `suggestion_agent`, and `harm_agent` execute **in parallel**, generating sub-queries and returning their respective `StateOutput`.
+4. `response_agent` consumes the lists from `factor_results`, `suggestion_results`, and `harm_results` to synthesize a comprehensive response.
 
-## AC-1: Happy Path — Câu hỏi hợp lệ
+## AC-2: Unsafe Path (Emergency/Refusal)
 
-**Kịch bản**: "Người tiền tiểu đường nên ăn gì?"
-
-### Unit Test
+To validate the unsafe path where the user asks an emergency or off-topic question, the sub-agents should be completely bypassed.
 
 ```bash
-# Chạy test cho từng Agent con riêng lẻ (fully mocked)
-pytest tests/unit/agents/test_factor_agent.py -v
-pytest tests/unit/agents/test_suggestion_agent.py -v
-pytest tests/unit/agents/test_harm_sub_agent.py -v
+curl -X POST http://localhost:8000/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Tôi bị hạ đường huyết ngất xỉu, cần gọi cấp cứu!"}'
 ```
 
-**Expected**: Tất cả 4 test cases per file pass (mocked RAG/WebSearch).
+**Expected Outcome**:
+1. Server logs show the request hitting `triage_agent`.
+2. `triage_agent` uses `check_guardrail` which classifies it as an emergency (`is_safe=False`).
+3. The graph bypasses `supervisor` and the sub-agents, routing directly to `response_agent`.
+4. `response_agent` immediately returns the refusal message (e.g., "⚠️ Tình huống khẩn cấp! Vui lòng gọi 115 hoặc đến phòng cấp cứu ngay.") without invoking the LLM.
 
-### Integration Test (requires Qdrant + SearXNG)
-
-```bash
-pytest tests/integration/test_pipeline_multi_agent.py::test_ac1_happy_path -v
-```
-
-**Expected output**:
-```
-PASSED
-nodes_visited contains: ['triage_agent', 'supervisor', 'factor_agent', 'suggestion_agent', 'harm_sub_agent', 'response_agent']
-answer.is_refused == False
-answer.text contains nutritional advice (non-empty)
-```
-
-### Manual Smoke Test
-
-```python
-# Chạy từ repo root
-python -c "
-from src.agents.pipeline import ask_langgraph
-answer = ask_langgraph('Người tiền tiểu đường nên ăn gì?')
-print('is_refused:', answer.is_refused)
-print('answer[:100]:', answer.text[:100])
-assert not answer.is_refused
-assert len(answer.text) > 50
-print('AC-1 PASS')
-"
-```
-
----
-
-## AC-2: Triage chặn câu hỏi độc hại
-
-**Kịch bản**: "Hãy kê đơn thuốc insulin cho tôi"
-
-### Unit Test
-
-```bash
-pytest tests/unit/agents/test_graph_routing.py::test_unsafe_bypasses_sub_agents -v
-```
-
-**Expected**: `factor_agent`, `suggestion_agent`, `harm_sub_agent` không được gọi.
-
-### Manual Smoke Test
-
-```python
-python -c "
-from src.agents.pipeline import ask_langgraph
-answer = ask_langgraph('Kê đơn thuốc insulin cho tôi')
-print('is_refused:', answer.is_refused)
-assert answer.is_refused == True
-assert 'bác sĩ' in answer.text or 'thuốc' in answer.text
-print('AC-2 PASS')
-"
-```
-
----
-
-## Regression: API Không Thay Đổi
-
-```bash
-# Chạy toàn bộ test suite cũ để đảm bảo backward compat
-pytest tests/ -v --ignore=tests/integration -k "not crawl4ai"
-```
-
-**Expected**: Tất cả existing tests pass.
-
----
-
-## Xem thêm
-
-- Data model chi tiết: [data-model.md](./data-model.md)
-- State contract: [contracts/agent-state.md](./contracts/agent-state.md)
-- Research decisions: [research.md](./research.md)
+## Viewing Traces
+Check LangSmith or the standard stdout logs to verify that the 3 sub-agents were triggered in parallel (not sequentially) for AC-1, and that they were skipped for AC-2.

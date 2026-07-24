@@ -1,7 +1,7 @@
 from __future__ import annotations
 import logging
 from langchain_groq import ChatGroq
-from src.config import GENERATIVE_MODEL
+from src.config import ROUTING_MODEL
 from src.tools.rag.qa.data_models import GuardrailResult, Query
 
 logger = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ def check_guardrail(query: Query) -> GuardrailResult:
     # Fast LLM classification
     try:
         llm = ChatGroq(
-            model_name=GENERATIVE_MODEL,
+            model_name=ROUTING_MODEL,
             temperature=0.0
         )
         

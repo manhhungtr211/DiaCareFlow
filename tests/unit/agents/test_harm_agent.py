@@ -1,8 +1,12 @@
 """
-Unit tests for harm_agent_node (UC-012).
+Unit tests for harm_agent_node (UC-015).
 
 All external calls (retrieve, web_search, ChatGroq) are mocked.
 No network or Qdrant access required.
+
+In the UC-015 flow, the LLM is called TWICE per agent invocation:
+  1. Sub-query generation from harm_task (returns list of queries).
+  2. Context extraction/summarization (returns harm_summary).
 """
 
 from __future__ import annotations
@@ -40,35 +44,42 @@ class TestHarmSubAgentHappyPath:
 
     @patch("src.agents.nodes.harm_agent.ChatGroq")
     @patch("src.agents.nodes.harm_agent.retrieve")
-    def test_rag_success_writes_harm_sub_results(self, mock_retrieve, mock_llm_cls):
-        """Should write harm_sub_results with summary when RAG succeeds."""
+    def test_rag_success_writes_harm_results(self, mock_retrieve, mock_llm_cls):
+        """Should write harm_results with summary when RAG succeeds."""
         mock_retrieve.return_value = _make_retrieved([_make_chunk()])
         mock_llm = MagicMock()
-        mock_llm.invoke.return_value = MagicMock(content="Cẩn thận với hạ đường huyết")
+        mock_llm.invoke.side_effect = [
+            MagicMock(content="Tiêm insulin có nguy hiểm không?"),  # sub-query gen
+            MagicMock(content="Cẩn thận với hạ đường huyết"),             # extraction
+        ]
         mock_llm_cls.return_value = mock_llm
 
-        state = {"user_input": "Tiêm insulin có nguy hiểm không?", "chat_history": []}
+        state = {"user_input": "Tiêm insulin có nguy hiểm không?", "harm_task": "Tiêm insulin có nguy hiểm không?", "chat_history": []}
         result = harm_agent_node(state)
 
-        assert "harm_sub_results" in result
-        assert len(result["harm_sub_results"]) == 1
-        assert result["harm_sub_results"][0]["harm_summary"] == "Cẩn thận với hạ đường huyết"
+        assert "harm_results" in result
+        assert len(result["harm_results"]) == 1
+        assert result["harm_results"][0]["harm_summary"] == "Cẩn thận với hạ đường huyết"
         assert "harm_agent" in result["nodes_visited"]
         assert "errors" not in result
+        assert mock_llm.invoke.call_count >= 2  # sub-query gen + extraction
 
     @patch("src.agents.nodes.harm_agent.ChatGroq")
     @patch("src.agents.nodes.harm_agent.retrieve")
     def test_harm_result_format(self, mock_retrieve, mock_llm_cls):
-        """harm_sub_results items must contain harm_summary key."""
+        """harm_results items must contain harm_summary key."""
         mock_retrieve.return_value = _make_retrieved([_make_chunk()])
         mock_llm = MagicMock()
-        mock_llm.invoke.return_value = MagicMock(content="Risk summary")
+        mock_llm.invoke.side_effect = [
+            MagicMock(content="question"),   # sub-query gen
+            MagicMock(content="Risk summary"),  # extraction
+        ]
         mock_llm_cls.return_value = mock_llm
 
-        state = {"user_input": "question", "chat_history": []}
+        state = {"user_input": "question", "harm_task": "question", "chat_history": []}
         result = harm_agent_node(state)
 
-        item = result["harm_sub_results"][0]
+        item = result["harm_results"][0]
         assert "harm_summary" in item
 
 
@@ -83,14 +94,17 @@ class TestHarmSubAgentWebFallback:
         mock_retrieve.return_value = _make_retrieved([])
         mock_asyncio_run.return_value = _make_web_result()
         mock_llm = MagicMock()
-        mock_llm.invoke.return_value = MagicMock(content="Web-based risk summary")
+        mock_llm.invoke.side_effect = [
+            MagicMock(content="query"),              # sub-query gen
+            MagicMock(content="Web-based risk summary"),  # extraction
+        ]
         mock_llm_cls.return_value = mock_llm
 
-        state = {"user_input": "question", "chat_history": []}
+        state = {"user_input": "question", "harm_task": "question", "chat_history": []}
         result = harm_agent_node(state)
 
         mock_asyncio_run.assert_called_once()
-        assert result["harm_sub_results"][0]["harm_summary"] == "Web-based risk summary"
+        assert result["harm_results"][0]["harm_summary"] == "Web-based risk summary"
 
 
 class TestHarmSubAgentErrorIsolation:
@@ -99,16 +113,16 @@ class TestHarmSubAgentErrorIsolation:
     @patch("src.agents.nodes.harm_agent.ChatGroq")
     @patch("src.agents.nodes.harm_agent.retrieve")
     def test_llm_failure_returns_empty_results_and_error(self, mock_retrieve, mock_llm_cls):
-        """LLM failure should be caught, errors appended, harm_sub_results=[]."""
+        """LLM failure should be caught, errors appended, harm_results=[]."""
         mock_retrieve.return_value = _make_retrieved([_make_chunk()])
         mock_llm = MagicMock()
         mock_llm.invoke.side_effect = Exception("LLM error")
         mock_llm_cls.return_value = mock_llm
 
-        state = {"user_input": "question", "chat_history": []}
+        state = {"user_input": "question", "harm_task": "question", "chat_history": []}
         result = harm_agent_node(state)
 
-        assert result["harm_sub_results"] == []
+        assert result["harm_results"] == []
         assert "errors" in result
         assert "Harm Sub-Agent error" in result["errors"][0]
         assert "harm_agent" in result["nodes_visited"]
@@ -116,16 +130,18 @@ class TestHarmSubAgentErrorIsolation:
     @patch("src.agents.nodes.harm_agent.ChatGroq")
     @patch("src.agents.nodes.harm_agent.asyncio.run")
     @patch("src.agents.nodes.harm_agent.retrieve")
-    def test_both_tools_fail_llm_still_called(self, mock_retrieve, mock_asyncio_run, mock_llm_cls):
-        """If both RAG and web fail, LLM is still called with general prompt."""
+    def test_both_tools_fail_returns_empty_results(self, mock_retrieve, mock_asyncio_run, mock_llm_cls):
+        """If both RAG and web fail, no context is available, should return empty results."""
         mock_retrieve.side_effect = ConnectionError("Qdrant down")
         mock_asyncio_run.side_effect = Exception("Web unreachable")
         mock_llm = MagicMock()
-        mock_llm.invoke.return_value = MagicMock(content="General risk answer")
+        # sub-query generation succeeds
+        mock_llm.invoke.return_value = MagicMock(content="question")
         mock_llm_cls.return_value = mock_llm
 
-        state = {"user_input": "question", "chat_history": []}
+        state = {"user_input": "question", "harm_task": "question", "chat_history": []}
         result = harm_agent_node(state)
 
-        assert len(result["harm_sub_results"]) == 1
-        assert result["harm_sub_results"][0]["harm_summary"] == "General risk answer"
+        assert len(result["harm_results"]) == 0
+        # sub-query gen called once, extraction NOT called (no context)
+        assert mock_llm.invoke.call_count == 1

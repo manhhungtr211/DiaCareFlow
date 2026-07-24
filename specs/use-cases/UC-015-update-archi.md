@@ -1,8 +1,8 @@
-# UC-012: Xử lý câu hỏi người dùng qua hệ thống Multi-Agent
+# UC-015: Cải tiến quy trình xử lý câu hỏi người dùng qua hệ thống Multi-Agent (Refactor Kiến trúc)
 
-**Feature ID**: `UC-012`
-**Version**: 2.0.0
-**Date**: 23/07/2026
+**Feature ID**: `UC-015`
+**Version**: 3.0.0
+**Date**: 24/07/2026
 **Input**: 
 
 ---
@@ -27,9 +27,8 @@
     - Harm Agent (Tác nhân mô tả các tác hại và ảnh hưởng tiêu cực do bệnh tiểu đường gây ra)
 5. Mỗi Agent con sử dụng LLM (prompt_system) để tạo tối đa 2 truy vấn con, kích hoạt tool phù hợp (Web Search hoặc RAG) để thu thập thông tin lần lượt với mỗi truy vấn.
 6. Sau khi nhận kết quả từ tool, mỗi Agent con sử dụng LLM trích xuất các ý chính ngắn gọn đúng với chuyên môn của nó.
-7. Hệ thống tổng hợp kết quả từ 3 Agent con (kèm metadata source, được định nghĩa trong state của agent đó) và truyền vào một StateOutput của mỗi node (đã định nghĩa trong model) để Response Agent sử dụng.
+7. Hệ thống tổng hợp kết quả từ 3 Agent con (kèm metadata source, được định nghĩa trong state của agent đó) và truyền vào ou node (đã định nghĩa trong model) để Response Agent sử dụng.
 8. Response Agent sử dụng StateOutput của mỗi node (đã định nghĩa trong model) này để tạo câu trả lời cuối cùng và trả về cho người dùng.
-
 
 ## Alternative Flows
 - **2a. Triage Agent phát hiện câu hỏi không an toàn:** Hệ thống bỏ qua bước 3 đến 7. Triage Agent gửi trực tiếp kết quả cảnh báo tới Response Agent để xuất câu trả lời từ chối cho người dùng.
@@ -39,8 +38,8 @@
 Given: Tài liệu y khoa đã được nạp và SearXNG hoạt động tốt.
 When: Người dùng hỏi "Người tiền tiểu đường nên ăn gì?".
 Then: Supervisor chia đều task cho 3 Agent chuyên môn.
-And: Response Agent trả về lời khuyên dinh dưỡng dựa trên tài liệu y khoa và web.
-And: Nội dung trả về tuyệt đối không tự sáng tạo ra thông tin không có trong tài liệu.
+And: Response Agent trả về kết quả trả lời dựa trên tài liệu y khoa và web.
+And: Nội dung trả về không tự sáng tạo ra thông tin.
 
 ### AC-2: Triage chặn câu hỏi độc hại (Của Alternative Flow 2a)
 Given: Hệ thống đã sẵn sàng.
@@ -48,8 +47,3 @@ When: Người dùng hỏi một câu hỏi vi phạm chính sách hoặc không
 Then: Triage Agent đánh dấu không an toàn.
 And: Response Agent trả về câu cảnh báo ngay lập tức.
 And: Không có bất kỳ Agent con hay Tool nào (RAG/SearXNG) bị kích hoạt để tránh tốn token.
-## Notes
-<!-- - **Context refactor:** UC này thay thế cho luồng kiến trúc cũ nhằm giải quyết tình trạng Agent bị quá tải ngữ cảnh và tốn kém token (Chi tiết triển khai kỹ thuật xem tại `design.md`). -->
-- Giải thích vì sao thay đổi nằm ở `proposal.md`
-
-

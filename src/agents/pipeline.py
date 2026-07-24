@@ -21,7 +21,7 @@ from langchain_groq import ChatGroq
 from src.agents.graph import compile_graph
 from src.agents.state import AgentState, SafetyCategory
 from src.agents.tracking import DiaCareFlowCallbackHandler
-from src.config import CHAT_HISTORY_MAX_TOKENS, GENERATIVE_MODEL
+from src.config import CHAT_HISTORY_MAX_TOKENS, ROUTING_MODEL
 from src.tools.rag.qa.data_models import Answer, ChunkResult
 
 logger = logging.getLogger(__name__)
@@ -64,7 +64,7 @@ def _build_chat_history(messages: list) -> list:
         messages,
         max_tokens=CHAT_HISTORY_MAX_TOKENS,
         strategy="last",
-        token_counter=ChatGroq(model_name=GENERATIVE_MODEL),
+        token_counter=ChatGroq(model_name=ROUTING_MODEL),
         include_system=True,
         allow_partial=False,
     )

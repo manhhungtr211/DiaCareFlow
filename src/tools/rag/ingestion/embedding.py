@@ -26,6 +26,9 @@ def embed_chunks(chunks: list[DocumentChunk]) -> list[EmbeddedChunk]:
     # thay vì lấy từ EMBEDDING_MODEL trong .env (đang chứa tên model của Google)
     print(f"Embedding mode: {EMBEDDING_MODEL}")
     # Sử dụng BGE-M3 để nhúng cả câu hỏi lẫn tài liệu (mô hình đa nhiệm)
+    import torch
+    from FlagEmbedding import BGEM3FlagModel
+    torch.set_default_dtype(torch.float16)
     embeddings_model = BGEM3FlagModel('BAAI/bge-m3', use_fp16=True)
     '''
     embeddings_model = HuggingFaceEmbeddings(

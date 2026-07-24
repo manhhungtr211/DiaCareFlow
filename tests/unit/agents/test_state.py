@@ -1,11 +1,12 @@
 """
-Unit tests for AgentState schema (UC-012).
+Unit tests for AgentState schema (UC-015).
 
 Verifies:
   - New Annotated fan-in fields exist and are initialized correctly.
   - operator.add reducer appends values correctly (fan-in behavior).
-  - Legacy fields are preserved (intent, small_talk_reply, suggestion_context, etc.).
-  - Removed fields (rag_context, error) are gone.
+  - Legacy fields are preserved (intent, small_talk_reply, nodes_visited, etc.).
+  - Removed fields (rag_context, error, suggestion_context, harm_sub_results) are gone.
+  - UC-015: FactorState, HarmState, SuggestionState and Output types are defined.
 """
 
 from __future__ import annotations
@@ -14,7 +15,12 @@ import operator
 import pytest
 from typing import Annotated, get_type_hints
 
-from src.agents.state import AgentState, SafetyCategory
+from src.agents.state import (
+    AgentState, SafetyCategory,
+    FactorState, FactorOutputState,
+    HarmState, HarmOutputState,
+    SuggestionState, SuggestionOutputState,
+)
 
 
 class TestAgentStateSchema:
@@ -25,18 +31,18 @@ class TestAgentStateSchema:
         hints = AgentState.__annotations__
         assert "factor_results" in hints, "factor_results field missing"
         assert "suggestion_results" in hints, "suggestion_results field missing"
-        assert "harm_sub_results" in hints, "harm_sub_results field missing"
+        assert "harm_results" in hints, "harm_results field missing (was harm_sub_results in v1)"
         assert "errors" in hints, "errors field missing"
 
     def test_legacy_fields_preserved(self):
-        """Fields used before UC-012 (except rag_context) must remain."""
+        """Fields used before UC-012 (except rag_context, suggestion_context) must remain."""
         hints = AgentState.__annotations__
         assert "user_input" in hints
         assert "is_safe" in hints
         assert "harm_task" in hints
         assert "intent" in hints
         assert "small_talk_reply" in hints
-        assert "suggestion_context" in hints
+        # suggestion_context was renamed to response_context in v2 — not asserted here
         assert "nodes_visited" in hints
         assert "chat_history" in hints
         assert "messageId" in hints
@@ -59,7 +65,7 @@ class TestAgentStateSchema:
         """
         import typing
         hints = typing.get_type_hints(AgentState, include_extras=True)
-        for field in ("factor_results", "suggestion_results", "harm_sub_results", "errors"):
+        for field in ("factor_results", "suggestion_results", "harm_results", "errors"):
             annotation = hints[field]
             # Annotated types have __metadata__ attribute
             assert hasattr(annotation, "__metadata__"), f"{field} must be Annotated"
@@ -113,3 +119,36 @@ class TestSafetyCategoryEnum:
         assert SafetyCategory.PRESCRIPTION == "PRESCRIPTION"
         assert SafetyCategory.DIAGNOSIS == "DIAGNOSIS"
         assert SafetyCategory.EMERGENCY == "EMERGENCY"
+
+
+class TestUC015PerAgentStateTypes:
+    """UC-015: Verify per-agent TypedDicts and OutputStates are defined with correct keys."""
+
+    def test_factor_state_has_required_keys(self):
+        """FactorState must have all required keys."""
+        required = {"rag_sources", "web_sources", "factor_task", "queries", "factor_context", "messageId"}
+        assert required <= set(FactorState.__annotations__.keys())
+
+    def test_factor_output_state_has_required_keys(self):
+        assert "factor_context" in FactorOutputState.__annotations__
+
+    def test_harm_state_has_required_keys(self):
+        required = {"rag_sources", "web_sources", "harm_task", "queries", "harm_context", "messageId"}
+        assert required <= set(HarmState.__annotations__.keys())
+
+    def test_harm_output_state_has_required_keys(self):
+        assert "harm_context" in HarmOutputState.__annotations__
+
+    def test_suggestion_state_has_required_keys(self):
+        required = {"rag_sources", "web_sources", "suggestion_task", "queries", "suggestion_context", "messageId"}
+        assert required <= set(SuggestionState.__annotations__.keys())
+
+    def test_suggestion_output_state_has_required_keys(self):
+        assert "suggestion_context" in SuggestionOutputState.__annotations__
+
+    def test_agent_state_has_task_keys(self):
+        """AgentState must expose the three *_task keys that Supervisor populates."""
+        hints = AgentState.__annotations__
+        assert "factor_task" in hints
+        assert "suggestion_task" in hints
+        assert "harm_task" in hints

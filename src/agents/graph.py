@@ -65,21 +65,41 @@ def _dispatch_sub_agents(state: AgentState) -> list[Send] | str:
     """
     Conditional routing / fan-out after Supervisor node (UC-012 T015).
 
-    - intent=SMALL_TALK → route directly to response_agent (string return)
-    - intent=DIABETES   → fan-out via Send to 3 parallel sub-agents (list return)
+    - should_response=True or follow_up_question → route directly to response_agent (string return)
+    - Else → fan-out via Send to 3 parallel sub-agents (list return)
     """
-    intent = state.get("intent", "DIABETES")
-
-    if intent == "SMALL_TALK":
-        logger.info("Routing: supervisor → response_agent (SMALL_TALK, bypass sub-agents)")
+    should_response = state.get("should_response", False)
+    follow_up_question = state.get("follow_up_question", "")
+    logger.info(f"should_response: {should_response}, follow_up_question: {follow_up_question}")
+    if should_response or follow_up_question:
+        logger.info("Routing: supervisor → response_agent (bypass sub-agents)")
         return "response_agent"
 
     logger.info("Routing: supervisor → [factor_agent | suggestion_agent | harm_agent] (PARALLEL)")
-    return [
-        Send("factor_agent",    {"user_input": state.get("factor_question", state["user_input"]), "chat_history": state.get("chat_history", [])}),
-        Send("suggestion_agent", {"user_input": state.get("suggestion_question", state["user_input"]), "chat_history": state.get("chat_history", [])}),
-        Send("harm_agent",  {"user_input": state.get("harm_question", state["user_input"]), "chat_history": state.get("chat_history", [])}),
-    ]
+    user_input = state.get("user_input", "")
+    
+    sends = []
+    
+    factor_task = state.get("factor_task")
+    if factor_task:
+        sends.append(Send("factor_agent", {"factor_task": factor_task, "user_input": user_input, "chat_history": state.get("chat_history", [])}))
+    else:
+        # Fallback to user_input if the supervisor omitted the task
+        sends.append(Send("factor_agent", {"factor_task": user_input, "user_input": user_input, "chat_history": state.get("chat_history", [])}))
+        
+    suggestion_task = state.get("suggestion_task")
+    if suggestion_task:
+        sends.append(Send("suggestion_agent", {"suggestion_task": suggestion_task, "user_input": user_input, "chat_history": state.get("chat_history", [])}))
+    else:
+        sends.append(Send("suggestion_agent", {"suggestion_task": user_input, "user_input": user_input, "chat_history": state.get("chat_history", [])}))
+        
+    harm_task = state.get("harm_task")
+    if harm_task:
+        sends.append(Send("harm_agent", {"harm_task": harm_task, "user_input": user_input, "chat_history": state.get("chat_history", [])}))
+    else:
+        sends.append(Send("harm_agent", {"harm_task": user_input, "user_input": user_input, "chat_history": state.get("chat_history", [])}))
+
+    return sends
 
 
 # ---------------------------------------------------------------------------

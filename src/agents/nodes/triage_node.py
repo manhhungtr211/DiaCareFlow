@@ -1,5 +1,5 @@
 """
-Harm Assessment Agent node for the LangGraph pipeline.
+Triage Agent node for the LangGraph pipeline.
 
 Wraps src/rag/qa/guardrail.py to evaluate question safety and classify
 into SafetyCategory (SAFE, PRESCRIPTION, DIAGNOSIS, EMERGENCY).
@@ -11,7 +11,11 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_google_genai import ChatGoogleGenerativeAI
+
 from src.agents.state import AgentState, SafetyCategory
+from src.config import TOOL_MODEL
 from src.tools.rag.qa.data_models import Query, GuardrailResult
 from src.tools.rag.qa.guardrail import check_guardrail
 
@@ -42,15 +46,16 @@ def triage_agent_node(state: AgentState) -> dict[str, Any]:
     Writes: is_safe, triage_results, response_context (refusal_message if unsafe),
             nodes_visited, errors
     """
-    logger.info("Harm Assessment Agent: evaluating question safety")
+    logger.info("Triage Agent: evaluating question safety")
+    logger.info(f"Triage Agent Input: {state.get('user_input', '')}")
 
     try:
         user_input = state.get("user_input", "")
 
         # Validate non-empty input
         if not user_input or not user_input.strip():
-            logger.warning("Harm Assessment: empty or whitespace-only input")
-            return {
+            logger.warning("Triage: empty or whitespace-only input")
+            output = {
                 "is_safe": False,
                 "triage_results": SafetyCategory.SAFE,
                 "response_context": {
@@ -59,11 +64,13 @@ def triage_agent_node(state: AgentState) -> dict[str, Any]:
                 "nodes_visited": ["triage_agent"],
                 "errors": ["Empty input"],
             }
+            logger.info(f"Triage Agent Output: {output}")
+            return output
 
         # Check for special-char-only input
         if not any(c.isalnum() for c in user_input):
-            logger.warning("Harm Assessment: special-char-only input")
-            return {
+            logger.warning("Triage: special-char-only input")
+            output = {
                 "is_safe": False,
                 "triage_results": SafetyCategory.SAFE,
                 "response_context": {
@@ -72,6 +79,14 @@ def triage_agent_node(state: AgentState) -> dict[str, Any]:
                 "nodes_visited": ["triage_agent"],
                 "errors": ["Special characters only"],
             }
+            logger.info(f"Triage Agent Output: {output}")
+            return output
+
+        # Use Gemini 2.0 Flash for Triage
+        llm = ChatGoogleGenerativeAI(model=TOOL_MODEL, temperature=0.0)
+        
+        # Invoke LLM with strict classification prompt
+        logger.info("Triage Agent: checking input safety...")
 
         # Create Query object for guardrail
         query = Query(text=user_input)
@@ -80,35 +95,41 @@ def triage_agent_node(state: AgentState) -> dict[str, Any]:
         guard_result: GuardrailResult = check_guardrail(query)
 
         if guard_result.is_safe:
-            logger.info("Harm Assessment: question is SAFE")
-            return {
+            logger.info("Triage: question is SAFE")
+            output = {
                 "is_safe": True,
                 "triage_results": SafetyCategory.SAFE,
                 "nodes_visited": ["triage_agent"],
             }
+            logger.info(f"Triage Agent Output: {output}")
+            return output
         else:
             # Classify the type of harm from guardrail reason
             category = _classify_harm(guard_result.reason or "")
             refusal_msg = REFUSAL_MESSAGES.get(category, guard_result.reason or "")
 
-            logger.info(f"Harm Assessment: question is UNSAFE ({category.value})")
-            return {
+            logger.info(f"Triage: question is UNSAFE ({category.value})")
+            output = {
                 "is_safe": False,
                 "triage_results": category,
                 "response_context": {"refusal_message": refusal_msg},
                 "nodes_visited": ["triage_agent"],
             }
+            logger.info(f"Triage Agent Output: {output}")
+            return output
 
     except Exception as e:
-        logger.error(f"Harm Assessment Agent error: {e}", exc_info=True)
+        logger.error(f"Triage Agent error: {e}", exc_info=True)
         # On error, default to SAFE to avoid blocking valid questions (fail-open)
         # This matches the existing guardrail.py behavior
-        return {
+        output = {
             "is_safe": True,
             "triage_results": SafetyCategory.SAFE,
             "nodes_visited": ["triage_agent"],
-            "errors": [f"Harm Assessment error: {str(e)}"],
+            "errors": [f"Triage error: {str(e)}"],
         }
+        logger.info(f"Triage Agent Output: {output}")
+        return output
 
 
 def _classify_harm(reason: str) -> SafetyCategory:

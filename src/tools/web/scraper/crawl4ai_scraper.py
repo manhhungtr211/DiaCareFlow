@@ -27,9 +27,13 @@ async def scrape_urls(urls: list[str], timeout: int = 10) -> list[ScrapedContent
     
     scraped_contents = []
     
+    import asyncio
     try:
         async with AsyncWebCrawler(verbose=False) as crawler:
-            results = await crawler.arun_many(urls=urls)
+            results = await asyncio.wait_for(
+                crawler.arun_many(urls=urls), 
+                timeout=float(timeout)
+            )
             
             for url, result in zip(urls, results):
                 if result.success:

@@ -1,8 +1,12 @@
 """
-Unit tests for suggestion_agent_node (UC-012).
+Unit tests for suggestion_agent_node (UC-015).
 
 All external calls (web_search, retrieve, ChatGroq) are mocked.
 No network or Qdrant access required.
+
+In the UC-015 flow, the LLM is called TWICE per agent invocation:
+  1. Sub-query generation from suggestion_task (LLM.invoke returns list of queries).
+  2. Context extraction/summarization (LLM.invoke returns suggestion_summary).
 """
 
 from __future__ import annotations
@@ -48,10 +52,13 @@ class TestSuggestionAgentHappyPath:
         """Should write suggestion_results with summary when web_search succeeds."""
         mock_asyncio_run.return_value = _make_web_result()
         mock_llm = MagicMock()
-        mock_llm.invoke.return_value = MagicMock(content="Nên ăn rau xanh và ngũ cốc nguyên hạt")
+        mock_llm.invoke.side_effect = [
+            MagicMock(content="Tiền tiểu đường nên ăn gì?"),             # sub-query gen
+            MagicMock(content="Nên ăn rau xanh và ngũ cốc nguyên hạt"),  # extraction
+        ]
         mock_llm_cls.return_value = mock_llm
 
-        state = {"user_input": "Tiền tiểu đường nên ăn gì?", "chat_history": []}
+        state = {"user_input": "Tiền tiểu đường nên ăn gì?", "suggestion_task": "Tiền tiểu đường nên ăn gì?", "chat_history": []}
         result = suggestion_agent_node(state)
 
         assert "suggestion_results" in result
@@ -59,6 +66,7 @@ class TestSuggestionAgentHappyPath:
         assert result["suggestion_results"][0]["suggestion_summary"] == "Nên ăn rau xanh và ngũ cốc nguyên hạt"
         assert "suggestion_agent" in result["nodes_visited"]
         assert "errors" not in result
+        assert mock_llm.invoke.call_count >= 2  # sub-query gen + extraction
 
     @patch("src.agents.nodes.suggestion_agent.ChatGroq")
     @patch("src.agents.nodes.suggestion_agent.asyncio.run")
@@ -66,10 +74,13 @@ class TestSuggestionAgentHappyPath:
         """suggestion_results sources should come from scraped web content."""
         mock_asyncio_run.return_value = _make_web_result()
         mock_llm = MagicMock()
-        mock_llm.invoke.return_value = MagicMock(content="Summary")
+        mock_llm.invoke.side_effect = [
+            MagicMock(content="question"),  # sub-query gen
+            MagicMock(content="Summary"),   # extraction
+        ]
         mock_llm_cls.return_value = mock_llm
 
-        state = {"user_input": "question", "chat_history": []}
+        state = {"user_input": "question", "suggestion_task": "question", "chat_history": []}
         result = suggestion_agent_node(state)
 
         sources = result["suggestion_results"][0]["sources"]
@@ -88,10 +99,13 @@ class TestSuggestionAgentRagFallback:
         mock_asyncio_run.side_effect = Exception("Network error")
         mock_retrieve.return_value = _make_retrieved([_make_chunk()])
         mock_llm = MagicMock()
-        mock_llm.invoke.return_value = MagicMock(content="RAG-based suggestion")
+        mock_llm.invoke.side_effect = [
+            MagicMock(content="question"),          # sub-query gen
+            MagicMock(content="RAG-based suggestion"),  # extraction
+        ]
         mock_llm_cls.return_value = mock_llm
 
-        state = {"user_input": "question", "chat_history": []}
+        state = {"user_input": "question", "suggestion_task": "question", "chat_history": []}
         result = suggestion_agent_node(state)
 
         mock_retrieve.assert_called_once()
@@ -110,7 +124,7 @@ class TestSuggestionAgentErrorIsolation:
         mock_llm.invoke.side_effect = Exception("LLM quota exceeded")
         mock_llm_cls.return_value = mock_llm
 
-        state = {"user_input": "question", "chat_history": []}
+        state = {"user_input": "question", "suggestion_task": "question", "chat_history": []}
         result = suggestion_agent_node(state)
 
         assert result["suggestion_results"] == []

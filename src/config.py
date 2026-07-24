@@ -25,10 +25,12 @@ QDRANT_URL: str = os.getenv("QDRANT_URL")
 COLLECTION_NAME: str = os.getenv("QDRANT_COLLECTION")
 VECTOR_SIZE: int = int(os.getenv("VECTOR_SIZE"))
 
-# --- Groq AI settings ---
+# --- Groq AI & Gemini settings ---
 GROQ_API_KEY: str = os.getenv("GROQ_API_KEY")
-#EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL")
-GENERATIVE_MODEL: str = os.getenv("MODEL")
+GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY")
+
+ROUTING_MODEL: str = os.getenv("ROUTING_MODEL", "gpt-oss-20b")
+TOOL_MODEL: str = os.getenv("TOOL_MODEL", "gemini-2.0-flash")
 
 # --- Jina AI settings ---
 JINA_API_KEY: str = os.getenv("JINA_API_KEY")

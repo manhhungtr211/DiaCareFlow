@@ -24,12 +24,13 @@ def _make_state(
     is_safe: bool = True,
     intent: str = "DIABETES",
     user_input: str = "Người tiền tiểu đường nên ăn gì?",
-    harm_task=SafetyCategory.SAFE,
-    suggestion_context: dict | None = None,
+    harm_task: str = "",
+    should_response: bool = False,
+    follow_up_question: str = "",
     nodes_visited: list | None = None,
     factor_results: list | None = None,
     suggestion_results: list | None = None,
-    harm_sub_results: list | None = None,
+    harm_results: list | None = None,
     errors: list | None = None,
 ) -> dict:
     return {
@@ -37,11 +38,12 @@ def _make_state(
         "is_safe": is_safe,
         "intent": intent,
         "harm_task": harm_task,
-        "suggestion_context": suggestion_context or {},
+        "should_response": should_response,
+        "follow_up_question": follow_up_question,
         "nodes_visited": nodes_visited or [],
         "factor_results": factor_results or [],
         "suggestion_results": suggestion_results or [],
-        "harm_sub_results": harm_sub_results or [],
+        "harm_results": harm_results or [],
         "errors": errors or [],
         "chat_history": [],
         "small_talk_reply": "",
@@ -63,7 +65,7 @@ class TestHappyPathRouting:
         assert result == "supervisor"
 
     def test_supervisor_diabetes_dispatches_send(self):
-        """intent=DIABETES should return list of Send objects (fan-out)."""
+        """intent=DIABETES (and should_response=False) should fan-out to 3 sub-agents."""
         from langgraph.types import Send
         state = _make_state(is_safe=True, intent="DIABETES")
         result = _dispatch_sub_agents(state)
@@ -120,20 +122,20 @@ class TestUnsafePathRouting:
 
 
 class TestSmallTalkRouting:
-    """T023: verify SMALL_TALK intent bypasses sub-agents."""
+    """T023: verify SMALL_TALK intent (via should_response=True) bypasses sub-agents."""
 
     def test_smalltalk_routes_to_response_agent_not_sub_agents(self):
-        """intent=SMALL_TALK should route supervisor → response_agent directly."""
-        state = _make_state(is_safe=True, intent="SMALL_TALK")
+        """should_response=True should route supervisor → response_agent directly."""
+        state = _make_state(is_safe=True, intent="SMALL_TALK", should_response=True)
         result = _dispatch_sub_agents(state)
         assert result == "response_agent", (
             "SMALL_TALK must bypass all sub-agents and go directly to response_agent"
         )
 
     def test_smalltalk_does_not_return_send_list(self):
-        """SMALL_TALK must not fan-out (no Send objects)."""
+        """SMALL_TALK (should_response=True) must not fan-out (no Send objects)."""
         from langgraph.types import Send
-        state = _make_state(is_safe=True, intent="SMALL_TALK")
+        state = _make_state(is_safe=True, intent="SMALL_TALK", should_response=True)
         result = _dispatch_sub_agents(state)
         assert not isinstance(result, list), "SMALL_TALK should not produce Send fan-out"
 

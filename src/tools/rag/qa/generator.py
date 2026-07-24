@@ -2,7 +2,7 @@ from __future__ import annotations
 import logging
 from langchain_groq import ChatGroq
 
-from src.config import GENERATIVE_MODEL
+from src.config import ROUTING_MODEL
 from src.tools.rag.qa.data_models import Answer, Query, RetrievedContext
 
 logger = logging.getLogger(__name__)
@@ -73,9 +73,9 @@ Câu trả lời:
 
     # 3. Call LLM
     try:
-        logger.info(f"Generating answer using {GENERATIVE_MODEL}")
+        logger.info(f"Generating answer using {ROUTING_MODEL}")
         llm = ChatGroq(
-            model_name=GENERATIVE_MODEL,
+            model_name=ROUTING_MODEL,
             temperature=0.2  # Low temperature for more factual responses
         )
         

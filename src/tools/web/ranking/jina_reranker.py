@@ -57,8 +57,12 @@ async def compute_jina_boost(
     }
 
     try:
+        import asyncio
         async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.post(_JINA_BASE_URL, headers=headers, json=payload)
+            response = await asyncio.wait_for(
+                client.post(_JINA_BASE_URL, headers=headers, json=payload),
+                timeout=12.0
+            )
         response.raise_for_status()
         data = response.json()
         

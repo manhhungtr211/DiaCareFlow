@@ -1,178 +1,108 @@
-# DiaCareFlow
-# BR: DiaCareFlow — Hỗ trợ bệnh tiểu đường 
-## Goal 
-- Xây dựng hệ thống Intelligent Multi-Agent cá nhân hóa hỗ trợ bệnh tiểu đường, được điều phối bởi LangGraph và định dạng cấu trúc dữ liệu bằng PydanticAI.
+# DiaCareFlow — Hệ thống Intelligent Multi-Agent hỗ trợ tư vấn bệnh tiểu đường
 
-- Sử dụng mô hình Grok làm lõi xử lý ngôn ngữ tự nhiên.
-
-- Tích hợp công cụ: Tìm kiếm RAG (truy xuất từ Vector Database Qdrant) và Web Search (SearXNG) theo thời gian thực để cung cấp thông tin giáo dục sức khỏe nội bộ và trực tuyến.  (có hiển thị nguồn lúc trả kết quả ở web, giống gemini google search)
-
-- Tích hợp pipeline xử lý tài liệu (PDF parsing, chunking, tạo embeddings qua Google AI và nạp vào Qdrant) thông qua module doc_pipeline.
-
-- AI Agents dự kiến: Supervisor Agent, Suggestion Agent, Harm Assessment Agent, Factor Analysis Agent, Response Agent.
-
-- Hệ thống User: Xác thực bằng JWT, lưu trữ phiên trò chuyện (session/state của LangGraph) và lịch sử chat siêu tốc bằng Redis.
-
-- Tích hợp API End-to-End: Xây dựng Backend bằng FastAPI, kết nối luồng giao tiếp với Frontend (Next.js) và hỗ trợ trả kết quả Real-time Streaming (truyền phát luồng JSON trạng thái tác tử và nội dung).
-
-- Deployment: Triển khai lên Cloud (AWS/GCP) qua Docker.
- 
-## Success Metrics
-- Kỹ thuật: Real-time Streaming. RAG phải truy xuất tài liệu y khoa đạt trên 90%
-- Chỉ số an toàn: Phát hiện 100% các truy vấn nguy hiểm và đưa ra cảnh báo. Không kê đơn thuốc, không chẩn đoán bệnh
-
-## In Scope 
-- RAG PoC: Chạy script nạp PDF (Tiền tiểu đường) vào Qdrant và test độ chính xác truy xuất nội dung.
-- Agent Testing: Viết Prompt y khoa cho 5 Agents; test logic và output của từng node LangGraph riêng biệt.
-- Safety Guardrails: Chạy test case giả lập để kiểm chứng khả năng chặn 100% các truy vấn kê đơn hoặc cấp cứu.
-
- 
-## Out of Scope 
-- Cá nhân hóa các đề xuất cải thiện lối sống để ngăn ngừa bệnh tiến triển (idea sau)
+**DiaCareFlow** là một hệ thống AI đa tác vụ (Multi-Agent) chuyên biệt nhằm tư vấn, giải đáp thắc mắc và cung cấp thông tin y khoa liên quan đến bệnh tiểu đường. Dự án sử dụng cấu trúc điều phối linh hoạt qua LangGraph, kết hợp với sức mạnh của nhiều LLM và cơ sở dữ liệu véc-tơ để tối ưu hóa tính chính xác và an toàn.
 
 ---
 
-## Web Search Tool (UC-011)
+## 🎯 Mục Tiêu Dự Án (Goals)
 
-Standalone web search-and-scrape pipeline in `src/tools/web/`. Queries SearXNG,
-applies a composite ranking algorithm, scrapes top-3 URLs with Crawl4ai, and returns
-aggregated markdown content.
+- Xây dựng hệ thống Intelligent Multi-Agent cá nhân hóa hỗ trợ thông tin bệnh tiểu đường, được điều phối bởi **LangGraph**.
+- Đảm bảo an toàn y khoa tuyệt đối: Tích hợp chốt chặn (Guardrails/Triage) phân loại các yêu cầu nguy hiểm, cấp cứu hoặc kê đơn thuốc.
+- Kết hợp song song các LLM hàng đầu (**Google Gemini** và **Groq**) để tối ưu chi phí, tốc độ và khả năng suy luận.
+- Tích hợp tìm kiếm nội bộ **RAG (Qdrant)** và tìm kiếm trực tuyến thời gian thực qua Web Search pipeline (**SearXNG, Crawl4ai, Jina Reranker**) để cung cấp kiến thức cập nhật.
 
-### Setup SearXNG (Docker)
+---
 
-SearXNG disables JSON output by default. We have provided a configuration file to enable it.
+## 🏗 Kiến Trúc Hệ Thống
+
+DiaCareFlow tuân theo thiết kế **Multi-Agent (LangGraph)**, trong đó mỗi nút (node) chịu trách nhiệm một chức năng riêng biệt:
+
+### 1. Kiến trúc Đa Mô Hình (Multi-LLM)
+Hệ thống sử dụng hai lớp model độc lập:
+- **`ROUTING_MODEL` (via Groq)**: Được dùng bởi `Supervisor` và `Response` để đưa ra quyết định định tuyến tức thời và tổng hợp câu trả lời cuối cùng nhanh chóng (vd: `llama-3.1-70b-versatile` hoặc `gpt-oss-20b`).
+- **`TOOL_MODEL` (via Gemini 2.0 Flash)**: Được dùng cho các tác nhân chuyên sâu (Triage, Factor, Suggestion, Harm) yêu cầu phân tích ngữ cảnh dài, trích xuất dữ liệu, và tách các truy vấn con (sub-queries).
+
+### 2. Các Agents Chính
+- **Supervisor Agent**: Phân tích lịch sử trò chuyện và câu hỏi mới nhất, sau đó định tuyến luồng xử lý tới các sub-agents tương ứng, hoặc trả lời trực tiếp các câu giao tiếp xã giao (Small talk).
+- **Triage Agent (Guardrail)**: Đánh giá câu hỏi đầu vào để chặn các câu hỏi nằm ngoài phạm vi, yêu cầu cấp cứu, hoặc kê đơn.
+- **Factor Agent**: Truy xuất nguyên nhân, yếu tố nguy cơ.
+- **Suggestion Agent**: Cung cấp các đề xuất, chế độ dinh dưỡng, lối sống.
+- **Harm Agent**: Phân tích biến chứng và tác hại của bệnh.
+- **Response Agent**: Tổng hợp toàn bộ dữ liệu từ các agents, định dạng markdown chuẩn, và trình bày rõ ràng kèm nguồn trích dẫn.
+
+### 3. Retrieval-Augmented Generation (RAG) & Web Search
+- **Embedding**: Sử dụng mô hình `BAAI/bge-m3` (chạy hoàn toàn cục bộ).
+- **Vector DB**: Qdrant để lưu trữ và tìm kiếm vector.
+- **Web Search Tool**: Cào dữ liệu theo thời gian thực (SearXNG + Crawl4AI) và sử dụng Jina AI để chấm điểm độ liên quan (reranking).
+
+---
+
+## 🚀 Cài Đặt (Setup & Installation)
+
+### Yêu Cầu Hệ Thống
+- Python 3.10+
+- Docker (Dành cho SearXNG và Qdrant nếu chạy local)
+
+### 1. Cài Đặt Thư Viện
 
 ```bash
-# Pull and start SearXNG with the provided settings
-docker run -d --name searxng -p 8080:8080 -v ${PWD}/docker/searxng:/etc/searxng searxng/searxng:latest
+# Cài đặt requirements
+pip install -r requirements.txt
 
-# Verify (should return a JSON response, not 403)
-curl "http://localhost:8080/search?q=diabetes&format=json"
-```
-
-### Install Dependencies
-
-```bash
-pip install crawl4ai pyyaml
-
-# One-time Playwright browser setup (required by Crawl4ai)
 playwright install chromium
 ```
 
-### Configure Environment
+### 2. Cấu Hình Environment Variables
 
-Add to `.env`:
+Tạo tệp `.env` ở thư mục gốc của dự án và khai báo:
+
 ```env
-XNG_SEARCH_URL=http://localhost:8080
+# --- API Keys ---
+GROQ_API_KEY="your_groq_api_key_here"
+GEMINI_API_KEY="your_gemini_api_key_here"
+JINA_API_KEY="your_jina_api_key_here"
+
+# --- Models ---
+ROUTING_MODEL="llama-3.1-70b-versatile"
+TOOL_MODEL="gemini-2.0-flash"
+
+# --- Qdrant DB ---
+QDRANT_URL="http://localhost:6333"
+QDRANT_COLLECTION="diacareflow_docs"
+VECTOR_SIZE=1024
+
+# --- Document Chunking ---
+CHUNK_SIZE=2000
+CHUNK_OVERLAP=300
+
+# --- Search Tools ---
+XNG_SEARCH_URL="http://localhost:8080"
 XNG_MAX_RESULTS=5
 SCRAPE_TIMEOUT=10
 ```
 
-### Usage
-
-```python
-import asyncio
-from src.tools.web import web_search
-
-async def main():
-    resp = await web_search("bệnh tiểu đường type 2")
-    print(f"Found: {resp.found}")
-    print(f"Combined text ({len(resp.combined_text)} chars):\n{resp.combined_text[:500]}")
-
-asyncio.run(main())
-```
-
-### Run Tests
+### 3. Khởi Chạy Các Services Cơ Bản (Docker)
 
 ```bash
-# Unit tests (no network required)
-pytest tests/unit/tools/web/ -v
+# Chạy Qdrant cho Vector DB
+docker run -p 6333:6333 -p 6334:6334 -v $(pwd)/qdrant_storage:/qdrant/storage qdrant/qdrant
 
-# Integration tests (requires SearXNG Docker)
-pytest tests/integration/test_web_search_integration.py -v -m integration
+# Chạy SearXNG cho Web Search
+docker run -d --name searxng -p 8080:8080 -v ${PWD}/docker/searxng:/etc/searxng searxng/searxng:latest
 ```
 
-### Module Structure
+### 4. Chạy Backend API (FastAPI)
 
+```bash
+uvicorn src.api.main:app --reload
 ```
-src/tools/web/
-├── __init__.py              # Exposes web_search() public API
-├── _api.py                  # Pipeline orchestrator
-├── models.py                # Pydantic data models
-├── exceptions.py            # SearchError, ScrapeError
-├── search/
-│   └── xng_search.py        # SearXNG async HTTP client
-├── scraper/
-│   └── crawl4ai_scraper.py  # Crawl4ai parallel scraper
-├── ranking/
-│   ├── scorer.py            # Composite ranking algorithm
-│   └── jina_reranker.py     # Jina AI reranker (optional)
-└── config/
-    ├── __init__.py          # TrustedDomainRegistry singleton
-    └── trusted_domains.yaml # Medical domain whitelist
+Server sẽ chạy ở `http://127.0.0.1:8000`. Cung cấp endpoints để giao tiếp với Client và Streaming JSON.
+
+### 5. Chạy Front-end
+```bash
+cd frontend
+npm run dev
 ```
 
 ---
-
-## Pipeline Tracking (BR-004)
-
-DiaCareFlow automatically instruments every LangGraph node execution, LLM call, and tool call via a custom `DiaCareFlowCallbackHandler`. All events are emitted as structured **JSON lines** to both stdout and `logs/tracking.jsonl`.
-
-### What is tracked
-
-| Event Type   | Triggered when                               |
-|--------------|----------------------------------------------|
-| `chain_end`  | A LangGraph node finishes (e.g. `triage_agent`, `supervisor`) |
-| `chain_error`| A node raises an exception                   |
-| `llm_end`    | An LLM call completes (includes token usage) |
-| `llm_error`  | An LLM call fails                            |
-| `tool_end`   | A tool finishes (e.g. RAG search, web search)|
-| `tool_error` | A tool raises an exception                   |
-
-### Log file location
-
-```
-logs/tracking.jsonl   ← append-mode, one JSON object per line
-```
-
-The `logs/` directory is committed to git (via `.gitkeep`), but `*.jsonl` files are gitignored.
-
-### Log format example
-
-```json
-{
-  "event_id": "a1b2c3d4-...",
-  "session_id": "user-thread-123",
-  "event_type": "chain_end",
-  "name": "triage_agent",
-  "start_time": 1700000000.123,
-  "end_time": 1700000001.456,
-  "latency_ms": 1333.0,
-  "token_usage": {},
-  "ram_usage": {"start_mb": 310.2, "end_mb": 311.5, "diff_mb": 1.3},
-  "metadata": {}
-}
-```
-
-For LLM events, `token_usage` is populated:
-
-```json
-{
-  "event_type": "llm_end",
-  "name": "llama3-8b",
-  "latency_ms": 2100.5,
-  "token_usage": {"prompt_tokens": 120, "completion_tokens": 85, "total_tokens": 205},
-  "ram_usage": {"start_mb": 315.0, "end_mb": 316.2, "diff_mb": 1.2}
-}
-```
-
-### Source files
-
-```
-src/agents/tracking/
-├── __init__.py          # Exports DiaCareFlowCallbackHandler
-├── models.py            # LogEvent dataclass
-├── logger.py            # JsonTrackingLogger (stdout + file)
-└── callback_handler.py  # DiaCareFlowCallbackHandler
-```
 

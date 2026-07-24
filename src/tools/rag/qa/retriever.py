@@ -12,17 +12,17 @@ logger = logging.getLogger(__name__)
 def retrieve(query: Query, top_k: int = 20, score_threshold: float = 0.3) -> RetrievedContext:
     """Retrieve top-k relevant chunks from Qdrant for a given query."""
     top_n = 3
-    # 1. Embed query
-    logger.info("Embedding query using BGE-M3")
+    # 1. Embed query using the pre-loaded BGE-M3 singleton (loaded at app startup via UC-014)
     try:
-        from FlagEmbedding import BGEM3FlagModel
-        embeddings_model = BGEM3FlagModel('BAAI/bge-m3', use_fp16=True)
+        from src.tools.rag.embedding_model import get_bge_m3
+        embeddings_model = get_bge_m3()
         encoded_result = embeddings_model.encode(
-            [query.text],
-            batch_size=1,
+            [query.text], 
+            batch_size=1, 
             max_length=8192
         )
         query_vector = encoded_result['dense_vecs'][0].tolist()
+        logger.info(f"Embedding query using BGE-M3: {query}")
     except Exception as e:
         logger.error(f"Failed to embed query: {e}")
         return RetrievedContext(chunks=[], query_vector=[])
