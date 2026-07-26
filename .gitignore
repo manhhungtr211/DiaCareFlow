@@ -44,5 +44,11 @@ frontend/build/
 *.tsbuildinfo
 
 #AI
-.AGENT.md
-.CLAUDE.md
+AGENTS.md
+CLAUDE.md
+
+#update
+.agents/
+.specify/
+logs/
+tests/
